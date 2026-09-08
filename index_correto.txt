@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Torre de Comando — Dimensionamento Chat & E-mail</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+  :root{
+    --bg:#0F1626;
+    --panel:#161F35;
+    --panel-2:#1B2740;
+    --line:#2A3757;
+    --ink:#EAF0FB;
+    --muted:#8B98B8;
+    --navy-accent:#3E6FD9;
+    --chat:#4FC3E8;
+    --email:#E8A23E;
+    --success:#3FBE7A;
+    --warn:#E85D4A;
+    --rate:#B9F26B;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+    --mono: 'IBM Plex Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(62,111,217,0.18), transparent),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(79,195,232,0.10), transparent),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--body);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 80px;}
+
+  /* ---------- HEADER / TICKER (signature element) ---------- */
+  header.hero{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    flex-wrap:wrap;gap:18px;margin-bottom:22px;
+  }
+  .brand-eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    color:var(--navy-accent);text-transform:uppercase;margin-bottom:6px;
+  }
+  h1{
+    font-family:var(--display);font-weight:600;font-size:30px;margin:0;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--chat)}
+  .subtitle{color:var(--muted);font-size:13.5px;margin-top:6px;max-width:560px;line-height:1.5;}
+
+  .ticker{
+    display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));
+    gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    min-width:460px;
+  }
+  .tick{padding:14px 18px;border-right:1px solid var(--line);position:relative;}
+  .tick:last-child{border-right:none;}
+  .tick .lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;}
+  .tick .val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--ink);}
+  .tick .val small{font-size:12px;color:var(--muted);font-weight:400;}
+  .pulse{position:absolute;top:10px;right:10px;width:6px;height:6px;border-radius:50%;background:var(--success);box-shadow:0 0 0 0 rgba(63,190,122,.6);animation:pulse 2.2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(63,190,122,.55);}
+    70%{box-shadow:0 0 0 7px rgba(63,190,122,0);}
+    100%{box-shadow:0 0 0 0 rgba(63,190,122,0);}
+  }
+
+  /* ---------- LAYOUT SECTIONS ---------- */
+  .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+  @media (max-width:980px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+  }
+  .card h2{
+    font-family:var(--display);font-size:14.5px;font-weight:600;margin:0 0 4px;
+    display:flex;align-items:center;gap:8px;letter-spacing:.01em;
+  }
+  .card h2 .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.chat{background:var(--chat);box-shadow:0 0 8px var(--chat);}
+  .dot.email{background:var(--email);box-shadow:0 0 8px var(--email);}
+  .dot.op{background:var(--navy-accent);box-shadow:0 0 8px var(--navy-accent);}
+  .card .desc{color:var(--muted);font-size:11.5px;margin-bottom:14px;line-height:1.4;}
+
+  .field{margin-bottom:11px;}
+  .field label{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:11.5px;color:var(--muted);margin-bottom:4px;
+  }
+  .field label b{color:var(--ink);font-weight:500;}
+  .field label .unit{font-family:var(--mono);font-size:10px;color:var(--muted);}
+  input[type=number], input[type=text], input[type=month], select{
+    width:100%;background:#0D1424;border:1px solid var(--line);border-radius:8px;
+    color:var(--ink);padding:8px 10px;font-family:var(--mono);font-size:13px;
+    outline:none;transition:border-color .15s;
+  }
+  input[type=number]:focus, input[type=text]:focus, input[type=month]:focus, select:focus{
+    border-color:var(--navy-accent);background:#101B33;
+  }
+  /* remove spinners so people just type over the value instead of clicking arrows */
+  input[type=number]{-moz-appearance:textfield;}
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .toggle-group{display:flex;background:#0D1424;border:1px solid var(--line);border-radius:9px;padding:3px;margin-bottom:14px;}
+  .toggle-group button{
+    flex:1;background:transparent;border:none;color:var(--muted);padding:8px 10px;
+    font-family:var(--body);font-size:12.5px;font-weight:600;border-radius:7px;cursor:pointer;
+    transition:all .15s;
+  }
+  .toggle-group button.active{background:var(--navy-accent);color:#fff;}
+
+  .btn-primary, .btn-ghost, .btn-danger{
+    font-family:var(--body);font-size:12.5px;font-weight:600;border-radius:8px;
+    padding:9px 14px;cursor:pointer;transition:all .15s;border:1px solid transparent;
+  }
+  .btn-primary{background:var(--navy-accent);color:#fff;}
+  .btn-primary:hover{background:#5382e6;}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--navy-accent);color:var(--navy-accent);}
+  .btn-danger{background:transparent;border:1px solid rgba(232,93,74,.4);color:var(--warn);font-size:11px;padding:5px 9px;}
+  .btn-danger:hover{background:rgba(232,93,74,.12);}
+  .btn-small{font-family:var(--body);font-size:11px;font-weight:600;border-radius:6px;padding:5px 9px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink);}
+  .btn-small:hover{border-color:var(--navy-accent);color:var(--navy-accent);}
+
+  .indisp-total{
+    margin-top:12px;padding:10px 12px;border-radius:9px;border:1px dashed var(--line);
+    display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);
+    font-size:12px;color:var(--muted);
+  }
+  .indisp-total b{color:var(--ink);font-size:15px;}
+  .indisp-total.warn{border-color:var(--warn);}
+  .indisp-total.warn b{color:var(--warn);}
+
+  /* ---------- TABLE SECTION ---------- */
+  .section-title{
+    font-family:var(--display);font-size:16px;font-weight:600;margin:30px 0 4px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-title .idx{font-family:var(--mono);color:var(--navy-accent);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 7px;}
+  .section-sub{color:var(--muted);font-size:12.5px;margin-bottom:14px;}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel);}
+  table{width:100%;border-collapse:collapse;min-width:980px;}
+  thead th{
+    position:sticky;top:0;background:var(--panel-2);text-align:right;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;color:var(--muted);
+    text-transform:uppercase;padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  thead th:first-child, tbody td:first-child{text-align:left;}
+  tbody td{padding:7px 10px;border-bottom:1px solid rgba(42,55,87,.5);text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap;}
+  tbody tr:hover{background:rgba(62,111,217,0.06);}
+  tbody td input{
+    width:78px;background:#0D1424;border:1px solid var(--line);border-radius:6px;
+    color:var(--ink);padding:5px 7px;font-family:var(--mono);font-size:12.5px;text-align:right;
+  }
+  .mes-label{font-family:var(--body);font-weight:600;color:var(--ink);font-size:12.5px;}
+  td.readonly{color:var(--muted);}
+  td.hc-total{color:var(--ink);font-weight:600;font-size:13.5px;}
+  td.tag-chat{color:var(--chat);}
+  td.tag-email{color:var(--email);}
+
+  .chart-card{margin-top:20px;}
+  .legend-inline{display:flex;gap:16px;margin-top:2px;margin-bottom:10px;}
+  .legend-inline span{font-family:var(--mono);font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .legend-inline .sw{width:9px;height:9px;border-radius:2px;}
+
+  footer{margin-top:36px;color:var(--muted);font-size:11.5px;line-height:1.7;border-top:1px solid var(--line);padding-top:16px;}
+  footer b{color:var(--ink);}
+
+  .note{
+    background:rgba(62,111,217,0.08);border:1px solid rgba(62,111,217,0.35);
+    border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);
+    margin-bottom:20px;line-height:1.55;
+  }
+  .note b{color:var(--ink);}
+
+  .checkbox-cell{text-align:center !important;}
+  .checkbox-cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy-accent);cursor:pointer;}
+  .empty-state{padding:26px;text-align:center;color:var(--muted);font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div>
+      <div class="brand-eyebrow">Planejamento &middot; Torre de Comando</div>
+      <h1>Simulador de <span>Cenários</span> — Chat & E-mail</h1>
+      <div class="subtitle">Ajuste frota, contact rate e premissas operacionais para projetar volume e necessidade de pessoas nos próximos 12 meses.</div>
+      <div style="font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:8px;">
+        <span id="autosaveBadge">restaurando…</span>
+      </div>
+    </div>
+    <div class="ticker">
+      <div class="tick"><span class="pulse"></span><span class="lbl">Volume 12m</span><div class="val" id="tkVolume">–</div></div>
+      <div class="tick"><span class="lbl">Indisp. total</span><div class="val" id="tkIndisp">–</div></div>
+      <div class="tick"><span class="lbl">HC pico</span><div class="val" id="tkPico">–</div></div>
+      <div class="tick"><span class="lbl">HC médio</span><div class="val" id="tkMedio">–</div></div>
+    </div>
+  </header>
+
+  <div class="note">
+    <b>Sobre o motor de cálculo:</b> a necessidade de Chat é dimensionada por <b>Erlang C</b> (nível de serviço, TMA, concorrência) sobre o volume médio por hora operada; a necessidade de E-mail é dimensionada por <b>throughput</b> (volume × TMO ÷ horas produtivas), já que é um canal assíncrono. Ambos são grosseados pela <b>indisponibilidade total</b> (absenteísmo, turnover, pausas/escala, NR17, treinamento, outros) para chegar em HC — a mesma lógica do seu modelo de capacidade, aplicada em base mensal em vez de intervalos de 10 min.
+  </div>
+
+  <div class="grid">
+    <!-- CHAT PARAMS -->
+    <div class="card">
+      <h2><span class="dot chat"></span>Chat — parâmetros</h2>
+      <div class="desc">Premissas de atendimento em tempo real (Erlang C). <b>TMA agora é editável mês a mês</b> na tabela de cenário — o campo abaixo só serve para preencher rapidamente os 12 meses de uma vez.</div>
+      <div class="row2">
+        <div class="field"><label><b>TMA base</b><span class="unit">seg</span></label><input type="number" id="tmaChat" value="300" step="1"></div>
+        <div class="field"><label><b>Concorrência</b><span class="unit">chats/agente</span></label><input type="number" id="concorrencia" value="1" step="0.1" min="0.5"></div>
+      </div>
+      <button type="button" id="btnAplicarTma" class="btn-small" style="width:100%;margin-bottom:11px;">Aplicar TMA base aos 12 meses</button>
+      <div class="row2">
+        <div class="field"><label><b>NS meta</b><span class="unit">%</span></label><input type="number" id="nsMeta" value="90" step="1" min="1" max="99"></div>
+        <div class="field"><label><b>Tempo meta</b><span class="unit">seg</span></label><input type="number" id="tempoMeta" value="20" step="1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label><b>Operação</b><span class="unit">h/dia</span></label><input type="number" id="horasOperacaoChat" value="16" step="1" min="1" max="24"></div>
+        <div class="field"><label><b>Dias operados</b><span class="unit">dias/mês</span></label><input type="number" id="diasOperadosChat" value="30" step="1" min="1" max="31"></div>
+      </div>
+      <div class="field"><label><b>Ocupação máxima aceitável</b><span class="unit">%</span></label><input type="number" id="ocupMax" value="85" step="1" min="50" max="100"></div>
+    </div>
+
+    <!-- EMAIL PARAMS -->
+    <div class="card">
+      <h2><span class="dot email"></span>E-mail — parâmetros</h2>
+      <div class="desc">Canal assíncrono — dimensionado por throughput e SLA.</div>
+      <div class="field"><label><b>TMO</b><span class="unit">min/e-mail</span></label><input type="number" id="tmoEmail" value="15" step="0.5"></div>
+      <div class="row2">
+        <div class="field"><label><b>SLA</b><span class="unit">horas úteis</span></label><input type="number" id="slaEmail" value="72" step="1"></div>
+        <div class="field"><label><b>Horas úteis/dia</b><span class="unit">h</span></label><input type="number" id="horasUteisDia" value="8" step="1"></div>
+      </div>
+      <div class="indisp-total" id="slaDiasBox" style="margin-top:12px;">
+        <span>SLA em dias úteis</span><b id="slaDias">–</b>
+      </div>
+    </div>
+
+    <!-- JORNADA / INDISPONIBILIDADES -->
+    <div class="card">
+      <h2><span class="dot op"></span>Jornada & indisponibilidades</h2>
+      <div class="desc">Premissas compartilhadas — convertem PA/volume em headcount.</div>
+      <div class="row2">
+        <div class="field"><label><b>Jornada</b><span class="unit">h/dia</span></label><input type="number" id="jornadaHoras" value="6.33" step="0.01"></div>
+        <div class="field"><label><b>Dias/semana</b><span class="unit">dias</span></label><input type="number" id="diasSemana" value="5" step="1"></div>
+      </div>
+      <div class="field"><label><b>Semanas/mês</b><span class="unit">semanas</span></label><input type="number" id="semanasMes" value="4.33" step="0.01"></div>
+      <div class="row2">
+        <div class="field"><label>Absenteísmo<span class="unit">%</span></label><input type="number" class="indisp-field" id="absenteismo" value="8" step="0.1"></div>
+        <div class="field"><label>Turnover<span class="unit">%</span></label><input type="number" class="indisp-field" id="turnover" value="7.9" step="0.1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Pausas / escala<span class="unit">%</span></label><input type="number" class="indisp-field" id="pausasEscala" value="24" step="0.1"></div>
+        <div class="field"><label>NR17<span class="unit">%</span></label><input type="number" class="indisp-field" id="nr17" value="10.5" step="0.1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Treinamento/Outros<span class="unit">%</span></label><input type="number" class="indisp-field" id="treinamento" value="8" step="0.1"></div>
+        <div class="field"><label>Perda de escala<span class="unit">%</span></label><input type="number" class="indisp-field" id="outros" value="9" step="0.1"></div>
+      </div>
+      <div class="indisp-total" id="indispBox">
+        <span>Indisponibilidade total</span><b id="indispTotalVal">–</b>
+      </div>
+      <div class="indisp-total" id="produtivasBox" style="margin-top:8px;">
+        <span>Horas produtivas / FTE / mês</span><b id="horasProdutivas">–</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="idx">00</span>Calibração — valide contra um dado real conhecido</div>
+  <div class="section-sub">Digite um mês/headcount que você já opera hoje. O portal aplica o mesmo motor (Erlang C + indisponibilidade) e mostra o FTE estimado ao lado do seu real — ajuste Concorrência/Indisponibilidade até os dois baterem.</div>
+  <div class="card" style="margin-bottom:26px;">
+    <div class="row2" style="grid-template-columns:repeat(4,1fr);gap:10px;">
+      <div class="field"><label><b>Headcount real</b><span class="unit">pessoas</span></label><input type="number" id="calHC" value="35"></div>
+      <div class="field"><label><b>Volume real</b><span class="unit">chats/mês</span></label><input type="number" id="calVol" value="30000"></div>
+      <div class="field"><label><b>TMA real</b><span class="unit">seg</span></label><input type="number" id="calTMA" value="720"></div>
+      <div class="field"><label><b>NS real</b><span class="unit">%</span></label><input type="number" id="calNS" value="90"></div>
+    </div>
+    <div class="row2" style="grid-template-columns:repeat(4,1fr);gap:10px;margin-top:2px;">
+      <div class="field"><label><b>Tempo meta</b><span class="unit">seg</span></label><input type="number" id="calTempo" value="20"></div>
+      <div class="field"><label><b>Horas operação</b><span class="unit">h/dia</span></label><input type="number" id="calHoras" value="24"></div>
+      <div class="field"><label><b>Dias operados</b><span class="unit">dias/mês</span></label><input type="number" id="calDias" value="30"></div>
+      <div class="field"><label><b>Concorrência</b><span class="unit">chats/agente</span></label><input type="number" step="0.1" id="calConc" value="1"></div>
+    </div>
+    <div class="table-scroll" style="margin-top:12px;">
+      <table style="min-width:0;">
+        <thead><tr><th>Erlangs (A)</th><th>PA estimado</th><th>Ocup.</th><th>FTE estimado</th><th>Headcount real</th><th>Diferença</th></tr></thead>
+        <tbody><tr id="calResultRow"></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="idx">01</span>Cenário mensal — Frota, Contact Rate & Volume</div>
+  <div class="section-sub">
+    <span id="modoDesc">Modo <b>Automático</b>: Volume Chat = Frota × Contact Rate.</span>
+    &nbsp;&middot;&nbsp;
+    <label style="color:var(--muted);"><input type="month" id="mesInicio" value="2026-08" style="width:130px;display:inline-block;vertical-align:middle;margin-left:6px;"></label>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+    <div class="toggle-group" style="max-width:360px;margin-bottom:0;">
+      <button id="btnAuto" class="active">Automático (Frota × Contact Rate)</button>
+      <button id="btnManual">Manual (digitar volume)</button>
+    </div>
+    <input type="text" id="nomeCenario" placeholder="Nome do cenário (ex: Cenário Base Ago/26)" style="max-width:260px;">
+    <button id="btnSalvarCenario" class="btn-primary">💾 Salvar cenário</button>
+    <button id="btnNovoCenario" class="btn-ghost">🆕 Novo cenário</button>
+    <span id="saveFeedback" style="font-family:var(--mono);font-size:11.5px;color:var(--success);"></span>
+  </div>
+  <div style="margin-bottom:14px;">
+    <textarea id="descricaoCenario" placeholder="Descrição do cenário (opcional, mas recomendado) — o que motivou esse cenário, quais ações ele considera, premissas que o diferenciam dos outros... Isso vira o slide 'Visão Geral dos Cenários' na apresentação." style="width:100%;max-width:900px;min-height:52px;background:#0D1424;border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:8px 10px;font-family:var(--body);font-size:12.5px;resize:vertical;"></textarea>
+  </div>
+
+  <div class="table-scroll">
+    <table id="tblScenario">
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>Frota</th>
+          <th>Contact Rate<br>(chats/veículo)</th>
+          <th>TMA Chat<br>(seg)</th>
+          <th>Volume Chat</th>
+          <th>% E-mail<br>s/ Chat</th>
+          <th>Volume E-mail</th>
+        </tr>
+      </thead>
+      <tbody id="scenarioBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title"><span class="idx">02</span>Resultado — Necessidade de pessoas</div>
+  <div class="section-sub">PA = posições simultâneas necessárias (Erlang C) &middot; FTE = equivalente full-time &middot; HC = headcount (FTE arredondado para cima, líquido de indisponibilidade)</div>
+
+  <div class="table-scroll">
+    <table id="tblResult">
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>Erlangs (A)</th>
+          <th>Ocup.</th>
+          <th>PA Chat</th>
+          <th>FTE Chat</th>
+          <th>HC Chat</th>
+          <th>FTE E-mail</th>
+          <th>HC E-mail</th>
+          <th>HC Total</th>
+        </tr>
+      </thead>
+      <tbody id="resultBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title"><span class="idx">03</span>Visão Financeira</div>
+  <div class="section-sub">Custo de HC N1, staff e ferramentas por mês, mais custo por veículo da frota. Os parâmetros abaixo são globais — aplicam aos 12 meses do cenário atual (mesmo mês inicial definido na seção 01).</div>
+
+  <div class="card" style="max-width:680px;margin-bottom:18px;">
+    <h2><span class="dot op"></span>Parâmetros de custo</h2>
+    <div class="desc">Editável — reflete direto na tabela financeira abaixo.</div>
+    <div class="row2">
+      <div class="field"><label><b>Custo médio HC N1</b><span class="unit">R$/HC/mês</span></label><input type="number" id="custoHcN1" value="5808.00" step="0.01"></div>
+      <div class="field"><label><b>Custo Staff</b><span class="unit">R$/mês</span></label><input type="number" id="custoStaff" value="295100.00" step="0.01"></div>
+    </div>
+    <div class="field"><label><b>Custo Ferramentas</b><span class="unit">R$/mês</span></label><input type="number" id="custoFerramentas" value="73384.00" step="0.01"></div>
+  </div>
+
+  <div class="section-sub" style="margin-top:-6px;">Os campos "% Reajuste" são editáveis por mês (dissídio, aumento de folha etc.) — o percentual digitado num mês vale só para aquele mês; se o reajuste deve valer dali em diante, repita o mesmo % nos meses seguintes.</div>
+
+  <div class="table-scroll">
+    <table id="tblFinance">
+      <thead>
+        <tr>
+          <th>Mês</th>
+          <th>HC Total</th>
+          <th>Custo HC N1</th>
+          <th>% Reajuste<br>HC N1</th>
+          <th>Novo Custo<br>HC N1</th>
+          <th>Custo Staff</th>
+          <th>% Reajuste<br>Staff</th>
+          <th>Novo Custo<br>Staff</th>
+          <th>Custo Ferramentas</th>
+          <th>Custo Total</th>
+          <th>Custo / Veículo</th>
+        </tr>
+      </thead>
+      <tbody id="financeBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card chart-card">
+    <h2>Volume Mensal & Contact Rate</h2>
+    <div class="legend-inline">
+      <span><span class="sw" style="background:var(--rate)"></span>Contact Rate (linha)</span>
+    </div>
+    <canvas id="chartVolume" height="90"></canvas>
+    <div class="legend-inline" style="margin-top:10px;margin-bottom:0;">
+      <span><span class="sw" style="background:var(--chat)"></span>Volume Chat</span>
+      <span><span class="sw" style="background:var(--email)"></span>Volume E-mail</span>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <h2>Evolução de Headcount — 12 meses</h2>
+    <canvas id="chartHC" height="90"></canvas>
+    <div class="legend-inline" style="margin-top:10px;margin-bottom:0;">
+      <span><span class="sw" style="background:var(--chat)"></span>HC Chat</span>
+      <span><span class="sw" style="background:var(--email)"></span>HC E-mail</span>
+    </div>
+  </div>
+
+  <div class="section-title"><span class="idx">04</span>Cenários salvos & Apresentação Executiva</div>
+  <div class="section-sub">Salve versões do cenário atual com nomes diferentes, selecione quais entram na comparação e gere um .pptx pronto para levar ao executivo.</div>
+
+  <div class="table-scroll">
+    <table id="tblSaved">
+      <thead>
+        <tr>
+          <th style="text-align:center;">Incluir</th>
+          <th style="text-align:left;">Nome do cenário</th>
+          <th>Criado em</th>
+          <th>Volume total/ano</th>
+          <th>HC pico</th>
+          <th>HC médio</th>
+          <th>Indisp. total</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="savedBody"></tbody>
+    </table>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;flex-wrap:wrap;gap:10px;">
+    <span id="savedHint" style="color:var(--muted);font-size:12px;">Nenhum cenário selecionado ainda.</span>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="btnExportarCenarios" class="btn-ghost">📤 Exportar cenários</button>
+      <button id="btnImportarCenarios" class="btn-ghost">📥 Importar cenários</button>
+      <input type="file" id="inputImportarCenarios" accept="application/json,.json" style="display:none;">
+      <button id="btnGerarApresentacao" class="btn-primary">📊 Gerar Apresentação Executiva</button>
+    </div>
+  </div>
+  <div id="importFeedback" style="font-family:var(--mono);font-size:11.5px;color:var(--success);margin-top:6px;"></div>
+
+  <div class="note" style="margin-top:14px;">
+    <b>Compartilhar cenários com quem não acessa o mesmo armazenamento</b> (ex: você mandou o arquivo .html por e-mail): clique em <b>Exportar cenários</b>, mande o arquivo .json gerado pra pessoa, e ela clica em <b>Importar cenários</b> no portal dela e seleciona esse arquivo — os cenários entram na lista dela (sem apagar os que ela já tinha). Isso é uma transferência manual, pontual. Se vocês quiserem que todo mundo veja os mesmos cenários automaticamente, sem precisar trocar arquivo toda vez, o caminho é configurar o Google Sheets como armazenamento compartilhado (veja o arquivo <code>apps-script-backend.gs.txt</code> e o <code>README.md</code> do pacote de deploy).
+  </div>
+
+  <div class="note" style="margin-top:14px;">
+    <b>Sobre o formato:</b> o navegador não consegue criar um arquivo nativo do Google Apresentações direto (isso exigiria login OAuth com a API do Google, fora do escopo de um arquivo HTML solto). O botão gera um <b>.pptx</b> completo — capa, premissas e cenários — que abre perfeitamente no Google Apresentações: suba o arquivo no <b>Google Drive</b> e clique em <b>Abrir com → Google Apresentações</b> (ele converte automaticamente para um arquivo nativo, editável, sem precisar do PowerPoint instalado).
+  </div>
+
+  <div class="note" style="margin-top:14px;margin-bottom:0;">
+    <b>Onde isso fica salvo:</b> <span id="storageBackendNote">carregando…</span>
+  </div>
+
+  <footer>
+    <b>Como usar:</b> altere Frota / Contact Rate / % E-mail em cada mês, ou troque para modo Manual e digite o volume direto. Todos os parâmetros de Chat, E-mail, Jornada e Indisponibilidades são globais e recalculam os 12 meses automaticamente.<br>
+    <b>Limitação assumida:</b> o dimensionamento de Chat usa Erlang C sobre o volume médio por hora operada (distribuição uniforme no período de operação), em vez das curvas intraday de 10 minutos do modelo original — adequado para simulação de cenário, não para escala de turno.
+  </footer>
+
+</div>
+
+<script>
+const MESES_PT = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const N_MESES = 12;
+let modo = 'auto'; // 'auto' | 'manual'
+let chart = null;
+let volumeChart = null;
+
+if (typeof ChartDataLabels !== 'undefined') { Chart.register(ChartDataLabels); }
+
+// Selecionar todo o conteúdo ao focar um campo numérico/texto — evita ter que
+// clicar nas setinhas ou apagar dígito por dígito para trocar 400 por 10000.
+document.addEventListener('focusin', e=>{
+  if (e.target.matches('input[type=number], input[type=text]')) {
+    e.target.select();
+  }
+});
+
+// default monthly scenario seeds (frota crescente leve, contact rate estável)
+let scenario = Array.from({length:N_MESES}, (_,i)=>({
+  frota: 145 + i*2,
+  contactRate: 2.5,
+  volumeManual: 550 + i*10,
+  pctEmail: 20,
+  tmaChat: 300,
+  pctReajusteHcN1: 0,
+  pctReajusteStaff: 0
+}));
+
+function normalizeScenarioArray(arr){
+  // cenários salvos antes de algum campo existir (TMA por mês, % de reajuste)
+  // não têm esse campo — preenche com o padrão em vez de deixar NaN estourar a conta.
+  return arr.map(m => ({ tmaChat:300, pctReajusteHcN1:0, pctReajusteStaff:0, ...m }));
+}
+
+function fmtMonthLabel(startStr, idx){
+  const [y,m] = startStr.split('-').map(Number);
+  const d = new Date(y, m-1+idx, 1);
+  return MESES_PT[d.getMonth()] + '/' + String(d.getFullYear()).slice(2);
+}
+
+const PARAM_IDS = ['tmaChat','concorrencia','nsMeta','tempoMeta','horasOperacaoChat','diasOperadosChat','ocupMax',
+  'tmoEmail','slaEmail','horasUteisDia','jornadaHoras','diasSemana','semanasMes',
+  'absenteismo','turnover','pausasEscala','nr17','treinamento','outros',
+  'custoHcN1','custoStaff','custoFerramentas'];
+
+function collectRawParams(){
+  const raw = {};
+  PARAM_IDS.forEach(id=>{ raw[id] = document.getElementById(id).value; });
+  return raw;
+}
+function applyRawParams(raw){
+  PARAM_IDS.forEach(id=>{ if (raw[id] !== undefined) document.getElementById(id).value = raw[id]; });
+}
+function paramsFromRaw(raw){
+  const g = id => parseFloat(raw[id]) || 0;
+  return {
+    tmaChat: g('tmaChat'),
+    concorrencia: Math.max(g('concorrencia'),0.01),
+    nsMeta: g('nsMeta')/100,
+    tempoMeta: g('tempoMeta'),
+    horasOperacaoChat: g('horasOperacaoChat'),
+    diasOperadosChat: g('diasOperadosChat'),
+    ocupMax: g('ocupMax')/100,
+    tmoEmail: g('tmoEmail'),
+    slaEmail: g('slaEmail'),
+    horasUteisDia: g('horasUteisDia'),
+    jornadaHoras: g('jornadaHoras'),
+    diasSemana: g('diasSemana'),
+    semanasMes: g('semanasMes'),
+    absenteismo: g('absenteismo'),
+    turnover: g('turnover'),
+    pausasEscala: g('pausasEscala'),
+    nr17: g('nr17'),
+    treinamento: g('treinamento'),
+    outros: g('outros'),
+    custoHcN1: g('custoHcN1'),
+    custoStaff: g('custoStaff'),
+    custoFerramentas: g('custoFerramentas'),
+  };
+}
+function getParams(){
+  return paramsFromRaw(collectRawParams());
+}
+
+// ---------- Erlang C ----------
+function erlangBRecursive(A, N){
+  let B = 1;
+  for(let n=1;n<=N;n++){ B = (A*B)/(n + A*B); }
+  return B;
+}
+function erlangCProb(A, N){
+  if (N <= A) return 1;
+  const B = erlangBRecursive(A,N);
+  const C = (N*B)/(N - A*(1-B));
+  return Math.min(Math.max(C,0),1);
+}
+function serviceLevel(A, N, T, AHT){
+  if (N <= A) return 0;
+  const Pw = erlangCProb(A,N);
+  return 1 - Pw*Math.exp(-(N-A)*(T/AHT));
+}
+function minAgents(A, T, AHT, nsTarget, ocupMax){
+  if (A <= 0) return 0;
+  let N = Math.max(1, Math.floor(A)+1);
+  for (let i=0;i<3000;i++){
+    const sl = serviceLevel(A,N,T,AHT);
+    const ocup = A/N;
+    if (sl >= nsTarget && ocup <= ocupMax) return N;
+    N++;
+  }
+  return N;
+}
+
+function computeScenario(p, scenarioArr, modeVal, startStr){
+  const indispTotal = p.absenteismo + p.turnover + p.pausasEscala + p.nr17 + p.treinamento + p.outros;
+  const indispFrac = Math.min(indispTotal/100, 0.95);
+  const horasProdutivasMes = p.jornadaHoras * p.diasSemana * p.semanasMes * (1-indispFrac);
+
+  const rows = scenarioArr.map((m,i)=>{
+    const volumeChat = modeVal === 'auto' ? m.frota * m.contactRate : m.volumeManual;
+    const volumeEmail = volumeChat * (m.pctEmail/100);
+
+    const callsPerHour = volumeChat / Math.max(p.diasOperadosChat * p.horasOperacaoChat, 1);
+    const ahtAdj = m.tmaChat / p.concorrencia;
+    const A = callsPerHour * ahtAdj/3600;
+    const PA = minAgents(A, p.tempoMeta, ahtAdj, p.nsMeta, p.ocupMax);
+    const ocupacao = PA>0 ? A/PA : 0;
+    const agentHoursMonth = PA * p.horasOperacaoChat * p.diasOperadosChat;
+    const fteChat = horasProdutivasMes>0 ? agentHoursMonth/horasProdutivasMes : 0;
+    const hcChat = Math.ceil(fteChat);
+
+    const requiredHoursMonth = volumeEmail * (p.tmoEmail/60);
+    const fteEmail = horasProdutivasMes>0 ? requiredHoursMonth/horasProdutivasMes : 0;
+    const hcEmail = Math.ceil(fteEmail);
+
+    return {
+      label: fmtMonthLabel(startStr,i),
+      volumeChat, volumeEmail, contactRate: m.contactRate, tmaChat: m.tmaChat, frota: m.frota,
+      pctReajusteHcN1: m.pctReajusteHcN1, pctReajusteStaff: m.pctReajusteStaff,
+      A, ocupacao, PA, fteChat, hcChat, fteEmail, hcEmail,
+      hcTotal: hcChat+hcEmail
+    };
+  });
+  return {rows, indispTotal, horasProdutivasMes};
+}
+
+function computeAndRenderResults(startStr){
+  const p = getParams();
+  const {rows, indispTotal, horasProdutivasMes} = computeScenario(p, scenario, modo, startStr);
+
+  document.getElementById('indispTotalVal').textContent = indispTotal.toFixed(1)+'%';
+  document.getElementById('indispBox').classList.toggle('warn', indispTotal>=70);
+  document.getElementById('horasProdutivas').textContent = horasProdutivasMes.toFixed(1)+' h';
+  document.getElementById('slaDias').textContent = (p.slaEmail/Math.max(p.horasUteisDia,1)).toFixed(1)+' dias';
+
+  renderResultTable(rows);
+  updateFinanceComputedCells(rows, p);
+  renderChart(rows);
+  renderVolumeChart(rows);
+  renderTicker(rows, indispTotal);
+  renderCalibration(horasProdutivasMes);
+  scheduleAutosave();
+  return {rows, indispTotal, horasProdutivasMes};
+}
+
+// calc() = recálculo completo. Só reconstrói a tabela de cenário mensal e a
+// tabela financeira quando a ESTRUTURA muda (modo, mês inicial,
+// carregar/novo cenário) — nunca a cada tecla digitada, senão o campo perde
+// o foco a cada caractere.
+function calc(){
+  const startStr = document.getElementById('mesInicio').value || '2026-08';
+  renderScenarioTable(startStr);
+  renderFinanceTableStructure(startStr);
+  computeAndRenderResults(startStr);
+}
+
+function updateScenarioComputedCells(){
+  scenario.forEach((m,i)=>{
+    const volumeChat = modo === 'auto' ? (m.frota*m.contactRate) : m.volumeManual;
+    const volumeEmail = volumeChat * (m.pctEmail/100);
+    const volChatEl = document.getElementById('volChatCell-'+i);
+    if (volChatEl) volChatEl.textContent = Math.round(volumeChat).toLocaleString('pt-BR');
+    const volEmailEl = document.getElementById('volEmailCell-'+i);
+    if (volEmailEl) volEmailEl.textContent = Math.round(volumeEmail).toLocaleString('pt-BR');
+  });
+}
+
+// Digitar num campo do cenário mensal NÃO reconstrói a tabela — só atualiza os
+// números calculados e o resultado, preservando o foco/cursor do campo.
+function onScenarioFieldInput(i, f, value){
+  scenario[i][f] = parseFloat(value) || 0;
+  updateScenarioComputedCells();
+  const startStr = document.getElementById('mesInicio').value || '2026-08';
+  computeAndRenderResults(startStr);
+}
+
+function renderScenarioTable(startStr){
+  const body = document.getElementById('scenarioBody');
+  body.innerHTML = '';
+  scenario.forEach((m,i)=>{
+    const volumeChat = modo === 'auto' ? (m.frota*m.contactRate) : m.volumeManual;
+    const volumeEmail = volumeChat*(m.pctEmail/100);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mes-label">${fmtMonthLabel(startStr,i)}</td>
+      <td>${modo==='auto' ? `<input type="number" data-i="${i}" data-f="frota" value="${m.frota}">` : `<span class="readonly">${m.frota}</span>`}</td>
+      <td>${modo==='auto' ? `<input type="number" step="0.1" data-i="${i}" data-f="contactRate" value="${m.contactRate}">` : `<span class="readonly">${m.contactRate}</span>`}</td>
+      <td><input type="number" step="1" data-i="${i}" data-f="tmaChat" value="${m.tmaChat}"></td>
+      <td>${modo==='manual' ? `<input type="number" data-i="${i}" data-f="volumeManual" value="${m.volumeManual}">` : `<b id="volChatCell-${i}">${Math.round(volumeChat).toLocaleString('pt-BR')}</b>`}</td>
+      <td><input type="number" step="1" data-i="${i}" data-f="pctEmail" value="${m.pctEmail}"></td>
+      <td class="readonly" id="volEmailCell-${i}">${Math.round(volumeEmail).toLocaleString('pt-BR')}</td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      onScenarioFieldInput(+e.target.dataset.i, e.target.dataset.f, e.target.value);
+    });
+  });
+}
+
+function renderResultTable(rows){
+  const body = document.getElementById('resultBody');
+  body.innerHTML = rows.map(r=>`
+    <tr>
+      <td class="mes-label">${r.label}</td>
+      <td class="readonly">${r.A.toFixed(1)}</td>
+      <td class="readonly">${(r.ocupacao*100).toFixed(0)}%</td>
+      <td class="tag-chat">${r.PA}</td>
+      <td class="tag-chat">${r.fteChat.toFixed(2)}</td>
+      <td class="tag-chat">${r.hcChat}</td>
+      <td class="tag-email">${r.fteEmail.toFixed(2)}</td>
+      <td class="tag-email">${r.hcEmail}</td>
+      <td class="hc-total">${r.hcTotal}</td>
+    </tr>
+  `).join('');
+}
+
+function computeFinanceRows(rows, custoHcN1, custoStaff, custoFerramentas){
+  return rows.map(r=>{
+    const custoHc = r.hcTotal * custoHcN1;
+    const novoCustoHc = custoHc * (1 + (r.pctReajusteHcN1||0)/100);
+    const novoCustoStaff = custoStaff * (1 + (r.pctReajusteStaff||0)/100);
+    const custoTotal = novoCustoHc + novoCustoStaff + custoFerramentas;
+    const custoPorVeiculo = r.frota>0 ? custoTotal/r.frota : null;
+    return {
+      label:r.label, hcTotal:r.hcTotal, frota:r.frota,
+      custoHc, pctReajusteHcN1:r.pctReajusteHcN1, novoCustoHc,
+      custoStaff, pctReajusteStaff:r.pctReajusteStaff, novoCustoStaff,
+      custoFerramentas, custoTotal, custoPorVeiculo
+    };
+  });
+}
+
+function fmtBRL(v){
+  return 'R$ ' + v.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function setFinCell(id, text){
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+// Estrutura da tabela financeira (com os campos de % editáveis) — só é
+// reconstruída em mudanças estruturais (mês inicial, carregar/novo cenário),
+// nunca a cada tecla digitada, para não perder o foco do campo (mesma lógica
+// já usada na tabela de cenário mensal).
+function renderFinanceTableStructure(startStr){
+  const body = document.getElementById('financeBody');
+  body.innerHTML = '';
+  scenario.forEach((m,i)=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mes-label">${fmtMonthLabel(startStr,i)}</td>
+      <td class="readonly" id="finHcTotal-${i}">–</td>
+      <td class="readonly" id="finCustoHc-${i}">–</td>
+      <td><input type="number" step="0.1" data-i="${i}" data-f="pctReajusteHcN1" value="${m.pctReajusteHcN1}"></td>
+      <td class="tag-chat" id="finNovoCustoHc-${i}">–</td>
+      <td class="readonly" id="finCustoStaff-${i}">–</td>
+      <td><input type="number" step="0.1" data-i="${i}" data-f="pctReajusteStaff" value="${m.pctReajusteStaff}"></td>
+      <td class="tag-email" id="finNovoCustoStaff-${i}">–</td>
+      <td class="readonly" id="finCustoFerramentas-${i}">–</td>
+      <td class="hc-total" id="finCustoTotal-${i}">–</td>
+      <td class="readonly" id="finCustoVeiculo-${i}">–</td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const i = +e.target.dataset.i, f = e.target.dataset.f;
+      scenario[i][f] = parseFloat(e.target.value) || 0;
+      const startStr2 = document.getElementById('mesInicio').value || '2026-08';
+      computeAndRenderResults(startStr2);
+    });
+  });
+}
+
+// Só atualiza os números calculados/exibidos — não toca nos <input> de %,
+// preservando o foco de quem estiver digitando.
+function updateFinanceComputedCells(rows, p){
+  const finRows = computeFinanceRows(rows, p.custoHcN1, p.custoStaff, p.custoFerramentas);
+  finRows.forEach((r,i)=>{
+    setFinCell('finHcTotal-'+i, r.hcTotal);
+    setFinCell('finCustoHc-'+i, fmtBRL(r.custoHc));
+    setFinCell('finNovoCustoHc-'+i, fmtBRL(r.novoCustoHc));
+    setFinCell('finCustoStaff-'+i, fmtBRL(r.custoStaff));
+    setFinCell('finNovoCustoStaff-'+i, fmtBRL(r.novoCustoStaff));
+    setFinCell('finCustoFerramentas-'+i, fmtBRL(r.custoFerramentas));
+    setFinCell('finCustoTotal-'+i, fmtBRL(r.custoTotal));
+    setFinCell('finCustoVeiculo-'+i, r.custoPorVeiculo!==null ? fmtBRL(r.custoPorVeiculo) : '—');
+  });
+  return finRows;
+}
+
+function renderVolumeChart(rows){
+  const ctx = document.getElementById('chartVolume');
+  const labels = rows.map(r=>r.label);
+  const volChat = rows.map(r=>r.volumeChat);
+  const volEmail = rows.map(r=>r.volumeEmail);
+  const contactRate = rows.map(r=>r.contactRate);
+  if (volumeChart){ volumeChart.destroy(); }
+  volumeChart = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {type:'bar', label:'Volume Chat', data:volChat, backgroundColor:'#4FC3E8', borderRadius:4, stack:'vol', yAxisID:'y', order:2,
+          datalabels:{color:'#0D1424', font:{weight:'bold', size:9}, formatter:v=>v>0?Math.round(v).toLocaleString('pt-BR'):''}},
+        {type:'bar', label:'Volume E-mail', data:volEmail, backgroundColor:'#E8A23E', borderRadius:4, stack:'vol', yAxisID:'y', order:2,
+          datalabels:{color:'#0D1424', font:{weight:'bold', size:9}, formatter:v=>v>0?Math.round(v).toLocaleString('pt-BR'):''}},
+        {type:'line', label:'Contact Rate', data:contactRate, borderColor:'#B9F26B', backgroundColor:'#B9F26B', yAxisID:'y1', tension:0.3, pointRadius:3, pointBackgroundColor:'#B9F26B', order:1,
+          datalabels:{color:'#EAF0FB', anchor:'end', align:'top', font:{weight:'bold', size:9}, formatter:v=>v.toFixed(2)}},
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ stacked:true, ticks:{color:'#8B98B8', font:{family:'IBM Plex Mono', size:11}}, grid:{color:'#2A3757'} },
+        y:{ stacked:true, position:'left', beginAtZero:true, ticks:{color:'#8B98B8', font:{family:'IBM Plex Mono', size:11}}, grid:{color:'#2A3757'}, title:{display:true, text:'Volume', color:'#8B98B8'} },
+        y1:{ position:'right', beginAtZero:true, ticks:{color:'#B9F26B', font:{family:'IBM Plex Mono', size:11}}, grid:{drawOnChartArea:false}, title:{display:true, text:'Contact Rate', color:'#B9F26B'} }
+      }
+    }
+  });
+}
+
+function renderChart(rows){
+  const ctx = document.getElementById('chartHC');
+  const labels = rows.map(r=>r.label);
+  const dataChat = rows.map(r=>r.hcChat);
+  const dataEmail = rows.map(r=>r.hcEmail);
+  if (chart){ chart.destroy(); }
+  chart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'HC Chat', data:dataChat, backgroundColor:'#4FC3E8', borderRadius:4, stack:'hc',
+          datalabels:{color:'#0D1424', font:{weight:'bold', size:10}, formatter:v=>v>0?v:''}},
+        {label:'HC E-mail', data:dataEmail, backgroundColor:'#E8A23E', borderRadius:4, stack:'hc',
+          datalabels:{color:'#0D1424', font:{weight:'bold', size:10}, formatter:v=>v>0?v:''}},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ stacked:true, ticks:{color:'#8B98B8', font:{family:'IBM Plex Mono', size:11}}, grid:{color:'#2A3757'} },
+        y:{ stacked:true, ticks:{color:'#8B98B8', font:{family:'IBM Plex Mono', size:11}}, grid:{color:'#2A3757'}, beginAtZero:true }
+      }
+    }
+  });
+}
+
+function renderCalibration(horasProdutivasMes){
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+  const hcReal = g('calHC');
+  const vol = g('calVol');
+  const tma = g('calTMA');
+  const ns = g('calNS')/100;
+  const tempo = g('calTempo');
+  const horas = g('calHoras');
+  const dias = g('calDias');
+  const conc = Math.max(g('calConc'), 0.01);
+  const p = getParams();
+
+  const callsPerHour = vol/Math.max(dias*horas,1);
+  const ahtAdj = tma/conc;
+  const A = callsPerHour*ahtAdj/3600;
+  const PA = minAgents(A, tempo, ahtAdj, ns, p.ocupMax);
+  const ocup = PA>0 ? A/PA : 0;
+  const agentHoursMonth = PA*horas*dias;
+  const fteEst = horasProdutivasMes>0 ? agentHoursMonth/horasProdutivasMes : 0;
+  const diffPct = hcReal>0 ? ((fteEst-hcReal)/hcReal*100) : 0;
+  const diffColor = Math.abs(diffPct) <= 10 ? 'var(--success)' : 'var(--warn)';
+
+  document.getElementById('calResultRow').innerHTML = `
+    <td class="readonly">${A.toFixed(1)}</td>
+    <td class="tag-chat">${PA}</td>
+    <td class="readonly">${(ocup*100).toFixed(0)}%</td>
+    <td class="hc-total">${fteEst.toFixed(1)}</td>
+    <td class="readonly">${hcReal}</td>
+    <td style="color:${diffColor};font-weight:600;">${diffPct>=0?'+':''}${diffPct.toFixed(0)}%</td>
+  `;
+}
+
+function renderTicker(rows, indispTotal){
+  const volTotal = rows.reduce((s,r)=>s+r.volumeChat+r.volumeEmail,0);
+  const hcs = rows.map(r=>r.hcTotal);
+  const pico = Math.max(...hcs);
+  const media = hcs.reduce((a,b)=>a+b,0)/hcs.length;
+  document.getElementById('tkVolume').innerHTML = Math.round(volTotal).toLocaleString('pt-BR');
+  document.getElementById('tkIndisp').innerHTML = indispTotal.toFixed(1)+'<small>%</small>';
+  document.getElementById('tkPico').innerHTML = pico;
+  document.getElementById('tkMedio').innerHTML = media.toFixed(1);
+}
+
+// ---------- Armazenamento unificado ----------
+// Prioridade em cascata:
+//   1) Google Sheets (via Apps Script Web App) — se SHEETS_API_URL estiver
+//      configurado abaixo, é o backend "de verdade": qualquer pessoa da
+//      empresa que abrir esta página (dentro ou fora do Claude) lê/escreve
+//      no MESMO Google Sheets, então os cenários ficam realmente compartilhados
+//      entre pessoas diferentes, em computadores diferentes.
+//   2) Armazenamento do Claude — só funciona quando esta página está aberta
+//      dentro do Claude (não funciona no GitHub Pages nem em file://).
+//   3) localStorage do navegador — último recurso, local a este computador.
+//
+// COMO CONFIGURAR O GOOGLE SHEETS COMO BANCO:
+//   1. Crie uma planilha Google Sheets qualquer.
+//   2. Nela, vá em Extensões > Apps Script e cole o código do arquivo
+//      "apps-script-backend.gs.txt" (veio junto com este pacote).
+//   3. Clique em Implantar > Nova implantação > tipo "App da Web".
+//      Executar como: Eu.  Quem tem acesso: qualquer pessoa da sua empresa
+//      (Google Workspace) — assim só quem tem conta Google da empresa acessa.
+//   4. Copie a URL gerada e cole abaixo, entre as aspas.
+const SHEETS_API_URL = 'https://script.google.com/a/macros/turbi.com.br/s/AKfycbzmDDiKqVtAaUKoxyInCy3WqLKWtEUOOsDto3Q9YrjDdFsDV2QAEhc3meRmvLg8XNGPiA/exec'; // <-- cole aqui a URL da implantação do Apps Script
+
+async function storageGet(key){
+  if (SHEETS_API_URL){
+    try{
+      const res = await fetch(SHEETS_API_URL + '?key=' + encodeURIComponent(key));
+      if (res.ok){
+        const json = await res.json();
+        if (json && json.value !== null && json.value !== undefined) return json.value;
+      }
+    }catch(e){ console.warn('Google Sheets indisponível, usando fallback', e); }
+  }
+  try{
+    if (window.storage){
+      const r = await window.storage.get(key, true);
+      if (r && r.value) return r.value;
+    }
+  }catch(e){ /* artefato fora do Claude, ou chave inexistente */ }
+  try{ return localStorage.getItem(key); }catch(e){ return null; }
+}
+async function storageSet(key, value){
+  let savedNoSheets = false;
+  if (SHEETS_API_URL){
+    try{
+      const res = await fetch(SHEETS_API_URL, {
+        method:'POST',
+        // text/plain evita o preflight de CORS que o Apps Script não responde bem
+        headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify({key, value})
+      });
+      savedNoSheets = res.ok;
+    }catch(e){ console.warn('Falha ao salvar no Google Sheets, usando fallback', e); }
+  }
+  try{ if (!SHEETS_API_URL && window.storage) await window.storage.set(key, value, true); }catch(e){}
+  try{ localStorage.setItem(key, value); }catch(e){}
+  return savedNoSheets;
+}
+
+function storageBackendLabel(){
+  if (SHEETS_API_URL) return 'Google Sheets (compartilhado com a empresa)';
+  if (typeof window.storage !== 'undefined') return 'Claude (compartilhado dentro do Claude)';
+  return 'este navegador (local, não compartilhado)';
+}
+
+const WORKING_STATE_KEY = 'estado-atual-trabalho-v1';
+const CAL_IDS = ['calHC','calVol','calTMA','calNS','calTempo','calHoras','calDias','calConc'];
+let autosaveTimer = null;
+let restoringState = false;
+
+function serializeWorkingState(){
+  return {
+    modo,
+    mesInicio: document.getElementById('mesInicio').value,
+    nomeCenario: document.getElementById('nomeCenario').value,
+    descricaoCenario: document.getElementById('descricaoCenario').value,
+    scenario: scenario,
+    params: collectRawParams(),
+    calibracao: Object.fromEntries(CAL_IDS.map(id=>[id, document.getElementById(id).value])),
+  };
+}
+
+function scheduleAutosave(){
+  if (restoringState) return; // não salva enquanto está restaurando, evita loop
+  clearTimeout(autosaveTimer);
+  const badge = document.getElementById('autosaveBadge');
+  if (badge) badge.textContent = 'salvando…';
+  autosaveTimer = setTimeout(async ()=>{
+    await storageSet(WORKING_STATE_KEY, JSON.stringify(serializeWorkingState()));
+    if (badge) badge.textContent = 'salvo automaticamente ✓';
+  }, 600);
+}
+
+async function restoreWorkingState(){
+  let state = null;
+  try{
+    const raw = await storageGet(WORKING_STATE_KEY);
+    if (raw) state = JSON.parse(raw);
+  }catch(e){ state = null; }
+  if (!state) return false;
+
+  restoringState = true;
+  try{
+    modo = state.modo || 'auto';
+    document.getElementById('btnAuto').classList.toggle('active', modo==='auto');
+    document.getElementById('btnManual').classList.toggle('active', modo==='manual');
+    document.getElementById('modoDesc').innerHTML = modo==='auto'
+      ? 'Modo <b>Automático</b>: Volume Chat = Frota × Contact Rate.'
+      : 'Modo <b>Manual</b>: Volume Chat digitado diretamente.';
+    if (state.mesInicio) document.getElementById('mesInicio').value = state.mesInicio;
+    if (state.nomeCenario) document.getElementById('nomeCenario').value = state.nomeCenario;
+    if (state.descricaoCenario) document.getElementById('descricaoCenario').value = state.descricaoCenario;
+    if (Array.isArray(state.scenario) && state.scenario.length===N_MESES) scenario = normalizeScenarioArray(state.scenario);
+    if (state.params) applyRawParams(state.params);
+    if (state.calibracao) CAL_IDS.forEach(id=>{ if (state.calibracao[id]!==undefined) document.getElementById(id).value = state.calibracao[id]; });
+  } finally {
+    restoringState = false;
+  }
+  return true;
+}
+
+
+const STORAGE_KEY = 'cenarios-planejamento-v1';
+let savedScenarios = [];
+
+function normalizeParams(raw){
+  // cenários salvos antes de campos existirem (ex: custo HC N1/Staff/Ferramentas)
+  // herdam os valores atuais da tela para esses campos que faltam, em vez de
+  // cair em zero (custo R$0 enganoso) ou disparar o aviso de "premissas
+  // diferentes" só por causa de um campo que nem existia quando foi salvo.
+  const current = collectRawParams();
+  return { ...current, ...raw };
+}
+
+async function loadSavedScenarios(){
+  try{
+    const raw = await storageGet(STORAGE_KEY);
+    savedScenarios = raw ? JSON.parse(raw) : [];
+    savedScenarios.forEach(s=>{
+      s.scenario = normalizeScenarioArray(s.scenario);
+      s.params = normalizeParams(s.params);
+      if (s.descricao === undefined) s.descricao = '';
+    });
+  }catch(e){
+    savedScenarios = [];
+  }
+  renderSavedScenarios();
+}
+
+async function persistScenarios(){
+  try{
+    await storageSet(STORAGE_KEY, JSON.stringify(savedScenarios));
+  }catch(e){
+    console.error('Falha ao salvar cenários', e);
+  }
+}
+
+function nextScenarioName(){
+  return 'Cenário ' + (savedScenarios.length+1);
+}
+
+async function saveScenario(){
+  const nomeInput = document.getElementById('nomeCenario');
+  const descInput = document.getElementById('descricaoCenario');
+  const nome = nomeInput.value.trim() || nextScenarioName();
+  const snap = {
+    id: 'c_' + Date.now() + '_' + Math.floor(Math.random()*1000),
+    nome,
+    descricao: descInput.value.trim(),
+    criadoEm: new Date().toISOString(),
+    modo,
+    mesInicio: document.getElementById('mesInicio').value || '2026-08',
+    scenario: JSON.parse(JSON.stringify(scenario)),
+    params: collectRawParams(),
+    selected: true
+  };
+  savedScenarios.push(snap);
+  await persistScenarios();
+  nomeInput.value = '';
+  descInput.value = '';
+  const fb = document.getElementById('saveFeedback');
+  fb.textContent = '✓ "'+nome+'" salvo';
+  setTimeout(()=>{ fb.textContent=''; }, 2500);
+  renderSavedScenarios();
+}
+
+function novoCenario(){
+  scenario = Array.from({length:N_MESES}, (_,i)=>({
+    frota: 145 + i*2, contactRate: 2.5, volumeManual: 550 + i*10, pctEmail: 20, tmaChat: 300,
+    pctReajusteHcN1: 0, pctReajusteStaff: 0
+  }));
+  document.getElementById('nomeCenario').value = '';
+  document.getElementById('descricaoCenario').value = '';
+  calc();
+}
+
+function loadScenarioIntoWorkingState(id){
+  const snap = savedScenarios.find(s=>s.id===id);
+  if (!snap) return;
+  scenario = normalizeScenarioArray(JSON.parse(JSON.stringify(snap.scenario)));
+  modo = snap.modo;
+  document.getElementById('btnAuto').classList.toggle('active', modo==='auto');
+  document.getElementById('btnManual').classList.toggle('active', modo==='manual');
+  document.getElementById('modoDesc').innerHTML = modo==='auto'
+    ? 'Modo <b>Automático</b>: Volume Chat = Frota × Contact Rate.'
+    : 'Modo <b>Manual</b>: Volume Chat digitado diretamente.';
+  document.getElementById('mesInicio').value = snap.mesInicio;
+  applyRawParams(snap.params);
+  document.getElementById('nomeCenario').value = snap.nome + ' (cópia)';
+  document.getElementById('descricaoCenario').value = snap.descricao || '';
+  calc();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function deleteScenario(id){
+  savedScenarios = savedScenarios.filter(s=>s.id!==id);
+  await persistScenarios();
+  renderSavedScenarios();
+}
+
+// ---------- Exportar / Importar cenários (transferência manual entre pessoas) ----------
+function exportScenarios(){
+  if (!savedScenarios.length){
+    alert('Não há cenários salvos para exportar ainda.');
+    return;
+  }
+  const payload = {
+    exportadoEm: new Date().toISOString(),
+    origem: 'Portal de Cenários Turbi',
+    cenarios: savedScenarios
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cenarios-turbi-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importScenariosFromFile(file){
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    let data;
+    try{
+      data = JSON.parse(e.target.result);
+    }catch(err){
+      alert('Arquivo inválido — não é um JSON válido.');
+      return;
+    }
+    const lista = Array.isArray(data) ? data : (Array.isArray(data.cenarios) ? data.cenarios : null);
+    if (!lista){
+      alert('Arquivo não reconhecido — não encontrei uma lista de cenários dentro dele.');
+      return;
+    }
+    let importados = 0;
+    lista.forEach(raw=>{
+      if (!raw || !raw.scenario || !raw.nome) return; // pula entradas malformadas
+      const novo = {
+        id: 'c_' + Date.now() + '_' + Math.floor(Math.random()*100000), // sempre um id novo, evita colidir com cenários que já existem localmente
+        nome: raw.nome,
+        descricao: raw.descricao || '',
+        criadoEm: raw.criadoEm || new Date().toISOString(),
+        modo: raw.modo || 'auto',
+        mesInicio: raw.mesInicio || '2026-08',
+        scenario: normalizeScenarioArray(raw.scenario),
+        params: normalizeParams(raw.params || {}),
+        selected: false // não seleciona automaticamente, pra não entrar sem querer na próxima apresentação
+      };
+      savedScenarios.push(novo);
+      importados++;
+    });
+    if (importados === 0){
+      alert('Nenhum cenário válido encontrado nesse arquivo.');
+      return;
+    }
+    await persistScenarios();
+    renderSavedScenarios();
+    const fb = document.getElementById('importFeedback');
+    fb.textContent = `✓ ${importados} cenário(s) importado(s) — desmarcados por padrão, selecione os que quiser usar na apresentação.`;
+    setTimeout(()=>{ fb.textContent=''; }, 5000);
+  };
+  reader.readAsText(file);
+}
+
+function toggleScenarioSelected(id, checked){
+  const snap = savedScenarios.find(s=>s.id===id);
+  if (snap){ snap.selected = checked; }
+  persistScenarios();
+  updateSavedHint();
+}
+
+function updateSavedHint(){
+  const n = savedScenarios.filter(s=>s.selected).length;
+  document.getElementById('savedHint').textContent = n===0
+    ? 'Nenhum cenário selecionado ainda.'
+    : n+' cenário(s) selecionado(s) para a apresentação.';
+}
+
+function renderSavedScenarios(){
+  const body = document.getElementById('savedBody');
+  if (savedScenarios.length===0){
+    body.innerHTML = `<tr><td colspan="8" class="empty-state">Nenhum cenário salvo ainda — monte um cenário acima e clique em "Salvar cenário".</td></tr>`;
+    updateSavedHint();
+    return;
+  }
+  body.innerHTML = savedScenarios.map(s=>{
+    const p = paramsFromRaw(s.params);
+    const {rows, indispTotal} = computeScenario(p, s.scenario, s.modo, s.mesInicio);
+    const volTotal = rows.reduce((a,r)=>a+r.volumeChat+r.volumeEmail,0);
+    const hcs = rows.map(r=>r.hcTotal);
+    const pico = Math.max(...hcs);
+    const media = hcs.reduce((a,b)=>a+b,0)/hcs.length;
+    const dataFmt = new Date(s.criadoEm).toLocaleDateString('pt-BR');
+    return `
+      <tr>
+        <td class="checkbox-cell"><input type="checkbox" data-id="${s.id}" class="sel-check" ${s.selected?'checked':''}></td>
+        <td style="text-align:left;font-family:var(--body);font-weight:600;color:var(--ink);">${s.nome}</td>
+        <td class="readonly">${dataFmt}</td>
+        <td class="readonly">${Math.round(volTotal).toLocaleString('pt-BR')}</td>
+        <td class="tag-chat">${pico}</td>
+        <td class="tag-chat">${media.toFixed(1)}</td>
+        <td class="readonly">${indispTotal.toFixed(1)}%</td>
+        <td>
+          <button class="btn-small load-btn" data-id="${s.id}">Carregar</button>
+          <button class="btn-small btn-danger del-btn" data-id="${s.id}">Excluir</button>
+        </td>
+      </tr>`;
+  }).join('');
+
+  body.querySelectorAll('.sel-check').forEach(cb=>{
+    cb.addEventListener('change', e=> toggleScenarioSelected(e.target.dataset.id, e.target.checked));
+  });
+  body.querySelectorAll('.load-btn').forEach(b=>{
+    b.addEventListener('click', e=> loadScenarioIntoWorkingState(e.target.dataset.id));
+  });
+  body.querySelectorAll('.del-btn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      if (confirm('Excluir este cenário salvo? Essa ação não pode ser desfeita.')) deleteScenario(e.target.dataset.id);
+    });
+  });
+  updateSavedHint();
+}
+
+function paramsDifferFromCurrent(rawParams){
+  const current = collectRawParams();
+  return PARAM_IDS.some(id => String(current[id]) !== String(rawParams[id]));
+}
+
+// Logo Turbi extraído do brandbook (fundo transparente), embutido em base64
+// para uso na apresentação executiva sem depender de upload externo.
+const LOGO_BLUE_B64 = 'iVBORw0KGgoAAAANSUhEUgAABB8AAAFmCAYAAAAlLTIGAAAxOklEQVR4nO3df4xd5X0n/s+51384jtIZnFGcxAWNCBqKV7jGKt64FMdFoaETWyES+UHsLdXGihXiJqlqpisgiUgA9Tt41dAY8nVlqlLZDWmRQmXiOt+sWGOSdQtd8IIKZZSiUVJnO9HU8TSq6z987/P94+YWG/xjZnzPnHPueb3+SVStss9cn3Oe57zP5/k8WUopAAAAAPLSKHoAAAAAQH8TPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuRI+AAAAALkSPgAAAAC5Ej4AAAAAuVpU9AAAAKAMTrVSvPajSBOTKQ4+m4oezpxdc1UWV70ni+HlkS0dyIoeDlTOiZMp/uG1SD/+SYqZn0W88MrCPwcuvzSLy94V8e53ZPFLl0e2ZHH/3MtZStV7sFbF0amUfvDDFD/7t6JHcn4jw1n84jv768IGAJitU60Uf/wXKe3c2y56KD0zMhzx0BeasXxZZoEHF/D8yyk99OftOHykfO/Ga1dl8VsfyuK61Vm2qFnt21n40EMTkyn9j8Mp/vffp1JeuBcyNBixZmUW69dkcdP11b+4AQAu5OhUSp/5SismJoseST7u2tqITRsbFnVwFlW6//shUBQ+9MCpVorx3e20Z1///JZDgxG7723GyHB1L24AgPM5cTLFTVtaafp40SPJ1/j2RmxYL4CA0+3d10737apetdO2TY24/dZq3s/Ch4s0MZnSlrtb0a+T1uaNWYxtaaiCAAD6zvbxVtp/qB5r4e/tbeoDAT/38Dfald5mVdUAQvhwEaqals3V0GDEgd1NPSEAgL7x/MspbR5rFT2MBbN2VRaP3OtrElQ9eOiq4j3tqM15OjqVahE8RERMH4/44h+1pVQAQN/4m/9Tr6XN4SMpTrXq9TfDGz39XH8EDxGde/rJg9V6RxM+zMOpVorPfKU+SXlExP5DKZ5+rloXNwDAufzvv6/fsmZqOur3R8PPHZtJ8el7+iN46Brb0Y6jU9XZyiB8mIdv7k+pCh1Re+0LD7bj2Exlrm0AgHOq4slkF+uFV+r3N0PXHQ/054fUKn0UFz7M0bGZFHXZbvFG08cj/t/H+vOmBQAA+tPRqZT6NXCcmOz0sCl6HLMhfJijlyaq8Q+blwPP1PrPBwAAKuYPH+3vj8dffrga1Q/Chzn6+x8UPYJiTR/vnIkNAABQdsdmUvT7kboTk1GJ3g/ChzmqY3OiN/qnf9asCAAAKL//9UL5X8p74eCz5f8zhQ9z1K97heZiYtJvAAAAlF8VXsp74am/Lf/fKXyYgyqUsiyEutzAAABAtfX7louuw0dSnGqV+28VPgAAANB36vbxeGq63NvjhQ8AAABAroQPAAAAUHEvvFLqwgfhAwAAAP2n7C/jdSN8AAAAAHIlfAAAAAByJXwAAAAAciV8AAAAAHIlfAAAAAByJXwAAAAAciV8AAAAAHIlfAAAAAByJXwAAAAAciV8AAAAAHIlfAAAAAByJXwAAAAAciV8AAAAAHIlfAAAAAByJXwAAAAAciV8AAAAAHIlfAAAAAByJXwAAAAAciV8YM7Wr8mKHgIAAAAVInwAAAAAciV8AAAAAHIlfGDOrrnKtgsAAABmT/jAnF0yENIHAACg1Or20fRtby16BOcnfGDOliyu100MAABQdldcVu73NOEDc7J5Y7kvaAAAgIiItyxWsV0mwgfm5LrV7l8AAKD8lg5kMTRY9CgWzrKhcoctwgfm5OqRrNQXNAAAQNdN19fj9WXtqiwWNcv9twofmLWR4U56CAAAUAV1qdz+8PvL/3cKH5i1j3zA5QIAAFTHtVfXo3L7V68p/9/pbZJZ+/CN5b+gAQAAupYszvq+af7ouqwSFerCB2ZldF3miE0AAKBybru5v197P/XRavx91Rglhfvd21wqAABA9SxflmWj6/rzQ+raVVmMDFejQt0bJRc0ui6L5cuqcUEDAAC80Zc/28j67djNocGIB+5oVOY9TfjABal6AAAAqmzJ4iy+emez6GH01Fc+16hEr4cub5Wc1+aNqh4AAIDqW70iy7Zt6o9X4G2bGvG+a6tT9RAhfOA8hgYjPn9btS5oAACAc7n91kblA4htmxpx+63Ve0+r9q9Orr7yuYYTLgAAgL5y+62NbHx7NV+Fx7dXM3iIED5wDps3ZpUr4wEAAJiNDesb2d893qzMKRhrV2Xxvb3NbMP66r6jLSp6AJTPyHDE2JbqXtQAAAAXsmRxFjvGmtmnPprS/zic4rFvt2P6eNGjOtO2TY14/9rqHKd5PsIHzjA0GPEn9zWzRc3KX9sAAAAXNDKcZSPDWXzqo1lMTUf6t3+PmJhMhY3n3e/IYtnbI5YNRV+9lwkf+A9DgxFPPNTMqnRcCwAAQC8samaxfFlkEREjw96Jek3PB/7DV+9sVuqcWAAAAKpB5QMxNBjxjf/ejOXLqr+PCAAAgPIRPtScrRYAAADkzbaLGhtdl8WB3YIHAAAA8qXyoabGtzeiymfEAgAAUB3Ch5pZuyqLL/9OQ38HAAAAFozwoSaGBiO+8rlGvO9a1Q4AAAAsLOFDnxsajBjb0oibrs+yRU25AwAAAAtP+NCn1q7K4jOfaMTKK0PoAAAAQKGED31kdF0WG389i2uvzrIliwUOAAAAlEOWUip6DD11qpViajpy+aP+eTrFf/n9dh7/03NyyS9ErPqlLC59V8Tyd0SsuCKLdw4JG6pq2ZDqFIA6OzrVP4uxKs1pKzac6pvfnXMbGY644rI3X5Pr12Sn/b/J4q1vCQ3ZIWeVDx+OTqX0wispXnw1xbMvpZiYLHpEMHcjwxFrrs7iutVZXHFZVvnJrxsCdu/NYzNFj+js1q/J4pqrskotluuoCtfT0oGIlVe6njhTN1R44ZUUMz/r/GdExE//NeLwkWqvv86nO6etvDKLX70my5YOlPN+ED5wLqPrsjOe65cMhKpi6IHKhg/HZlLc8UA79fPkTX2tXZXF1+5uVG6ie/q5dvrDR9uVDAFHhiN+9zYnwpSJ64mqODaTYvJopB//JMXBZ1M8+2KK6eNFj6o87traiI+Nlq/xtfCBuRgajFizMvuPDxdV/1AERahk+PDkwXYa21H89gfIU5WORz1xMsUX/6id9h+q3vPkjUbXZfHlz1Yv+OknrifK7FQrxWs/ijQx2Qka+uE6XQgjwxEPfaFZqhc24QMXa+2qLD78/nJX+ECZVCp8ONVKsfVLqh2ol9F1WfzB7zVK98Wo6/mXU/r8/a2++spXpeCn3zz9XDt94cG264lSOTqV0sFnUzz1t6mvt0sshPHtjdiwvhz3gvCBXhoajPj4Bxvx3l/OnDYH51Cp8OH+Xa20Z191xgu9ctfWRmzaWI7F2ukmJlO6eVur6GHk5utf8sK4kPr9enpiZzNGhsvz1ZdzO9VK8eKrkQ48044Dz9hC0WvffaQcFRDCB/K0eWMWt3yg4blfISdOpvjWdzv9BIvePrd2VRbvuTTipusbsXpF/1xDlQkf+n1RChdSlsVa16lWihtua6V+XpQPDUYc2N1UMr8A6nI9PfVo09ewkjo9cPChI18jwxGPP1j8vSB8YCF0KyI+PmprRlkdnUrpDx9tl3Yb3dBgxNaPlbN3zlxVInyow6IULqRsLy51qUQaXZfFjrGS/Oh9bPt4qy96PFzI5o1Z3LnV9VQmR6dS+qunUjz27f7a7lN2ZajoEz6w0NauyuK3PpTFdaur/xLZL/bua6f7dlWjl2AZe+fMVSXCh7q85MCFbNvUiNtvLX4bQN0qkWy/yNfTz7XTp++pxsTfC7ZfFO9UK8X3n0+VPU2lX3xvb7PQL8HCB4rS/ZL94Rsz1ZUFqXIvwT3jzcpuxWgUPYDZOPBM9S4KyMP/9/1yvKD98V+UYxwL5c/+yjMoT/v+Z71+3/9nd73unzI5cTLFw99op5UfaqVP3yN4KNr/eqECX8AgB9PHI+7b1Y5fuaWVHv5GOx2bcSsspCoHDxERm8da8fzL1Xx+lj58OHFSoyfompjsPDCLVofy+NNVdXKqCtcTeTs6ldL28Vb6lVtaaede4U9ZvPiqewF27m3Hr21qpe3jrXTipHtiIVQ5eOjaPNaKicnqBRClDx/+4bWo3I8KeZqaLvaeqGs6f3Sqeg/4KnA9kaejUyl98u5WuvGTrdqFXFXw7Ev+TaBr/6H0H5UQQoj8PHmw+sFD15a7W6X4KDkXpQ8fXvnHav2gkLcXXin2npg8Ws9A8Ac/rOWfnTvXE3noVjrc+MmWSpMSK0s1H5TJzr2vb8dwf/TWsZkUYzv6p/pt+njE+O52pS6S0ocPRb9oQdkUXaZa10Dw739Q9Aj609/8n3peT//0z0WPoD+dHjqodKiGoqv5oKx27m3HDbe10pMHq/VyWWZ3PNB/v+WefalS2y9KHz4AZzo2U+z//3UNBF/7UT3/7rzV9Xet632Ul24jSaED0E+mj0eM7WjHzdtOJdv1Ls7RqdQ32y3eqEqN4IUPAEAlnWqlePJgO920RSNJoH9NTEbc+MlW2Ioxf48+0b9zxP5DqTI9tIQPAEDlHJ1K6ZbPtdLYjrZTsYBa6G7FqFKZfRmcOJliz77+/ske21+Na0L4AABUxqlWivt3dfo6TEwWPRqAhTV9POLmba24f1dLFcQsPfdSNV7ML8Zj365GZYfwAQCohInJlG64rZX6/QsWwIXs2Zfils+19IKYhe8/3/8/0fTxahxfLnwAAEqtW+1w87aWLRYAP9ftBeFEjPM78Ew9fp6XJsofRAkfAIDSOjql2gHgfMZ2tGP7uG0YZ3PiZKpNaF2FCg/hAwBQSk8e7ByfWZeFI8B87T+U4obbWqkKpfcL6aczUZsf5NhM0SO4MOEDAFAqp1opPnl35yQLAGZn+njEr21qpedfLn/5PfUkfAAASuPYTOfr3eEj1s4A87F5rBUPf0MfiIiIqX8pegQL59kXy/9PLnwAAErh6efa6dc2tZJtFgAXZ+fedjz8jXbt+0D8+Cf1+furMHcKHwCAwj38jXb69D22WQD0ys697dj6JQEE5SF8AAAKc6qVYvt4K+3cK3gA6LXDR5IAgtIQPgAAhTjV6iyK9x+yKAbISzeAOHHSs5ZiCR8AgAWnsSTAwjl8JMVNWxzFSbGEDwDAgjo2k+Lmz2gsCbCQpo9H3PwZAQTFET4AAAtG8ABQnG4AoQcERRA+AAALQvAAULzp46EJJYUQPgAAuRM8AJSHUzAogvABAMiV4AGgfLoBRNHjoD6EDwBAbgQPAOV1+EiKh78hgGBhCB8AgFwIHgDKb+fedjx5UABB/oQPAEDPnWql+K93CR4AqmBsRzuefzkJIMiV8AEA6KlTrc4+4onJokcCwGx9/v5WHJuRP5Af4QMA0FN//BcpHT5iAQtQJdPHI+54wAkY5Ef4AAD0zN597bRzb7voYQAwD4ePpBjfrf8D+RA+AAA98fzLKd23S/AAUGV79qV4+jkBBL0nfAAALtqxmRSfv79V9DAA6IEvPNjW/4GeEz4AABflVCvFHQ+0nWwB0Ce6/R+KHgf9RfgAAFyU8d1tDSYB+szhIyn27hNA0DvCB2BOlg4UPQKgTJ5+rp327LM2BehH9+1qx9Gp5CFPTwgfgDlZeWVW9BCAkjg2k+ILD2owCdDPvvg1z3l6Q/gAAMyLPg8A/e/wkRRPHrT9gotX+vBBiTec6fJLVR4AxXvyoD4PAHUxtqMdJ0565nNxSh8+XLfaixac7j9dUfQIgLo7NpNibIcyXC7eJQNhoQcV8cU/Uv3AxSl9+HDFZeYkON3VI5mbAiiU49fohaHBiCWLTWlQFfsPpZiY1HyS+St9+LB8mRctON3SAbcEUBzbLeiVNSvNZ1A1YztaRQ+BCit9+BARsXaVyQkiIkbXuReA4pw4mWJ8t+0W9Mb6NeY0qJqJydB8knmrRPjw+1sqMUzI3cZft1ADivPFP3K6Bb1zzVXmNKii8d3tONWSPzB3lXirHxnOss0bTVDU2+i6LN53bcONABRiYjKl/YcsNumN0XWZrbVQUdPHIw48o/cDc1eJ8CEiYmxLIxsaLHoUUIyhwYgvf1bwABTHPl96xZwG1af6gfmoTPiwqJnF7nubRQ8DCrH73qaO4EBhnjzYThOTRY+CfvGVzzXMaVBxqh+Yj8qEDxGd7RdP7GyGCgjqYmgw4utfasTIsNJUoBinWppM0ju2EEL/UP3AXFUqfIjoBBBPPdrUA4K+N7ouiwO7m5lFGlCkA88kTSbpifHtjdgx1jSnQZ9Q/cBcVS58iOhswbhzazN7YmfT0YP0nZHhTrXDjrFmpiwVKJKjNemFtauy+N7eZrZhvTAd+s3ux80RzN6iogdwMUaGs2zHWDN2jEUcm0kxeTTSK/+Y4oVXehPA6ep9fiPDEVdcZh1xsZYORKy8Motrrspi2VBki3wUAkriT7+l6oH5GRmOWHN1Ftetts2iTLZtasSHbqjnP8cLr6SY+VnnP3/wwxT62PTGxGTE8y+ntHqFLcJcWKXDh9MtHchi6UBkq1dksWljb/43d4x1bqbP398Ki6+OocGIr97ZjJVXekkG6GcnTqbYudcXLc5uaDBizcrOOqAbokeEIL3kLntX1PaI0+XLOn929z3hVCvFaz+K9NxLKf7yO21hxEV46M/b8YiDAZiFvgkf8rJ6RZYd2N2MT2xv1b7T99pVWey6p2FBAVADf/ot+3jr5PRqxssvzeKyd3X+7+9+RxbL3t7575cMhO2A9I1FzSxGhiMbGc5i08ZGHJtJ8deHUtr1zbaPjnN0+EiKYzMplg54PnB+wodZWLI4i4e+0IwbP1nfM86HBiO+drfgAaAOTrVSPPZtVQ9VdnpPrGuuymLgbZ3/PjKcxVvf0vnvKhTgdUsHsti0Mcs2bWzE8y+n9OWHW6oh5uCx/Sndfms9q2qYPeHDLC1flmWj67JU1z4QWz/mTG6AunDCRbmca4tDRCdY6KprOT302uoVWfbEzkVxdCqlL36tHYeP1HP9PxePfbsdn/poFgJNzkf4MAfr12S1bUK5fo0HCUBdOOEif2tXZfGeS18PEk6vSHjL4siUL0Pxli/LskfubcbTz7XTFx60HeN8po9HvPhqpNUrwsOLcxI+zMHpXxfqZtmQBwlAHTz/sqqHXhsajLjp+ixuur4Rw8sFC1A177u2kT31aBbju9tpz756foicDY0nuRDhA7OihAqgHh76c1UPvTAyHPGRDzTiN9dlwgboA4uaWdy5tZnddL2T8M7l8JEUJ04mW7U5J+EDABAREcdmkr3NF2nbpka8f20WI8P6L0A/Wr0iy554qBl3PNBOnpdv9txLKb3vWs8/zq5R9AAAgHJ4bL/jNedjaDDirq2N+LvHm9nttzYywQP0t6UDnePn165yq7/Rn/2VaYRzU/kAADhec57GtzfipuszR1ZCzSxqdgKIP/6LlHbu9ezssvWC81H5AADEi6+GRpNzMLoui797vJltWN8QPEBNLWpmcfutjWzbJq9Up/uH10L5A2flTgEANJqcpZHhiCd2NmPHWDPzZQ+IiPjURzNbME5z4BnzCWcnfACAmjtxUqPJ2di8MYvHH2zq6QCcobsFQwDRceAZ8wlnJ3wAgJp77iWNJi/k619qxJ1bm7ZYAGe1qJnF1+5uZEODRY+keNPHI45OmVd4M+EDANSc7uTnNjQY8b29zex91zakDsB5LVmcxe57m0UPoxReeMW8wpsJHwCgxmy5OLehwYgnHmpmSwfkDsDsjAxn2V1bvWIdfNa8wpu5MwCgxnQlP7u1q7J46lHBAzB3HxvNspHhokdRrP2HTC28mfABAGpMV/I3GxmO2HWPIzSB+VnUzGJ8u+0X+j7wRsIHAKgxXcnPNDQY8Sf3aSwJXJyR4SwbXVfv58gPfmh+4UzCBwCoqaNTKU0fL3oU5aHHA9BLv3tbvV+1vv+88IEz1fuOAIAa0xDsTF+9sxmCB6BXli+rd/XDP/6o6BFQNsIHAKipp/5W+NC1bVMjVq/I6vuWAOSiztUPTlLijep7NwBAzVkYdqxdlcXttzYED0DPLV+WZWtX1ffxoukkpxM+AEANWRC+7oE7BA9Afn7rQ/V9xEz9S9EjoEyEDwBQQy+8InuIiLhra0OfByBX162u75auH//EXMPrhA8AUEOaTXZOt/jYaH1fCoCFsaiZxeaN9XzUvPiquYbXCR8AoIaefdGC8Kt3NmNRs54vBMDCum51PZ81x2aKHgFlInwAgJo5cTLF9PGiR1GskeFwugWwYK4eqefzRtDN6YQPAFAzP52J2q8Gv3h7s+ghADWydCCLocGiR7Hw6h50cybhAwDUTN2bTQ4NRqy8Mmr5FRIozpqV9XzsnDhZ7zmH1wkfAKBm6t4A7OMfbOj1ACy49Wvq+dxRbUeX8AEAaqbuDcA+7oQLoABve2vRI4BiCR8AoGb2H6rvR6iR4c7ea4CFdsVlnj3Um/ABAGrkVKu+wUNExJZbLH0AFlLd+wzxOjMwANTI1HS9995ec5Uvj0Axlg1pdEu9CR8AoEb+7d+LHkGxli/T7wEohka31J3wAQBqZGKyvoUPo+ss/AGgKMIHAKAW6nrMHQCUgfABAGrkh/+36BEU593vED4AQFGEDwBQI6/9qL7bLpa9vegRAEB9CR8AgFrQbBIAiiN8AIAa+em/Fj0CAKCOhA8AsMAuv7S4D/CHj9R32wUAUBzhAwAssMveVfQI6mftKjsuAKBIwgcAoO9d8gtFjwAA6k34MAfLhsJnEwAAAJgj4cMcLGrKHgAAAGCuhA8AAABAroQPAAAAQK6EDwAAAECuhA8AAABAroQPAAAAQK6EDwAAAECuhA8AAABAroQPAAAAQK6EDwAAAOTibW8tegSUhfABAIDaGRosegRQD1dclhU9BEpC+AAwC8++mIoeQl/66b8WPQKgrtasrN8L0czPih5BvR2dShYT1JrwAWAWpo8XPYL+dPiIdRjAQnnhFc9coDjCB4BZOnHSoq2XTrX8ngDUx9S/FD2CYixfltWvzIizEj4AzNJPZ8Lbcg9NTfs9ARbSD37osVukH//E70+9CR8AZsmirbf8nkCR1q+p38fYicmiR1BvL75av3lvZLjoEVAmwgeAWfr+8/VbNOTJ7wmw8GwhLM6zL9Xvt3fSBacTPjAr9mZDxIFn3Ae95PcEivTud9Tzpeif/tmWtyKcOJlqWXlyzVX1vM84O+EDs2JvNnROvDg241bohWMzyQkiQKGWvb3oERRjYtI8VoR/eK2ea+mBtxU9AspE+AAwB399yBndveB3BIr2lsVRy0+yB5/1+C3CgWfaRQ+hECPDtbzNOAfhA7OiMRx07PpmPRcPvfaX3/E7AsVaOlDPl6JnX7SmW2inWin27Kvn7/6L76xnyMfZCR/maHRdPe8fjeGgY/p4xMSkr/YXY2IypTruewXKp46d+KePRxydMo8tpBdfreeWi4iIJYvr+e7E2QkfmJU9+5Kmk/Bzf/wXvtpfDL8fUBZ17cRv68XC+vMn6znv1fWjLecmfJijpQNFj6A4dU5t4XT7DyVfjebp6FRK+w/56YByqGsnflvfFs6JkynqOu/V9f7i3IQPc7TyyvreRHVtlMOZNA7q+MNH3Q/z4XfrqOsRf1A2de3EPzFp68VC+dNv1fd3vuo95jrOJHxg1vbsS3HiZG2fn/zcW99S9AjKYf+hpPfDHE1MqnroqusRf1A2df4y+1dPeR7n7cTJFDv31jd0/6XLNZvkTMKHOar7V986p7fwRmM7WnqhzNKpVoqxHa2ihwFwhmVD9X05euzbbXNYzuq8bh4a1GySNxM+zFHdv/ru3NuOYzO1fY4S9V6ovdHEZMQ399d3YTEX39zvhIvTXTLgPoIyWNTManniRUTn1IsDz5jD8nJ0KqU6Vz3cdL1pjjcTPszR8mVZ7e+k+3e1TVQ1tqhZ+1vgDPftatt+cQETkyndt6u+C7Cz8TUIyqOuJ15ERIzvVv2Ql898pd7Vftetru99xbkJH+ahrgl51/5DKZ5/2ctWna1dZUI53Za7WyqCzuHEyRRb7q73AuyN6j6HQNmsX1PfOU31Qz6ePNiufbXf1SM+2PJmwod5qHNC3vX5+71s1dklv1D0CMpl+njEHQ+0k69HZzrVSvE797bT9PGiR1Iu5hAol7r38xrbYUttLx2dSmlsR72r/UaGI5YO1Pu+4uyED/NQ587IXdPHI27+TMvLVk25B97s8JEUW78kgOg61er8HoeP+D3e6PJL3T9QJpdfqgfLHQ/YUtsLp1opbv091X6/cZ1XTM7OlTEP115d+zkqIjoBhJetenJu89kJIDoED+f3n64oegTA6RY1s9pvJzx8JMXTzwkgLtZ/+++q/SIi3r+23vcT5yZ8mIdffKeEvKv7snXipPmqTpa9vegRlFfdAwjBw4XZdgHlc8N/dl9++p52HJ3S/2G+Hv5GO+0/5OeLUE3EuQkf5mHJ4iyGBoseRXkcPpLipi2tZL9gfTj15fwOH0lxw231uyeOzaS45XMtwcMFOK62GLaLcT6qWjtu/b1W+KA0dw9/o13rYzVPt3lj5mQ0zkn4ME/Orj3T9PGIX9vUSk7BqA8d+8+ve0/UpYz16efa6dc2tWrf3ftCRoYdV1uUgbcVPQLKzJfajunjEb9zb32r9+ZD8HCmm673esm5uTrmaeWV5qiz2TzWiu3jraRsr/9pJjQ7n76nHdvHW327NenEyRTbx1vp0/dYeM2G+wbKaVEzi9F11nYRtg/OheDhTEODEatXqI7l3KyC5ulXr3Fjncv+Qylu/GSrr1+4iHjvL7sFZmv/oRS/cksrPXmwfxZzp1opnjzYTr9yS8se1znQbBLKa+Ovm9e6Dh/pbKOr2/bB2TrVSvHJu1uChzf4+Ae9WnJ+rpB5Wjqg78OFdF+4to93Ss8FEf1leLkS1bka29GOG26rdgjRDR1uuK1V+3PM5+PqEcE1lJX780wTk51j1W2pPdPRqZRuuE1/o7NxygUXsqjoAVTZxz/YCInnhe0/lOLnX0bT2lVZ3PCfsxh42+vNvy4ZiGzJYg+rqukGcI6Umpvp450QYnx3pI9/sBEfH82ypQPlv/6PzaR4bH9Kj3277d98noYGO/cNUE5LB7IYGe68dNMxfbyzpfaurY30sdEsq3vPmicPtgXv5zAyHDEyLMDj/IQPF+G9v5zFzr1Fj6JaDh9JcZakuNbR8dBgxJqVWaxfk8XIcBa/+M7qhDECuPmbPh6xc287du6NNDIc8ZEPNOLaq7O4/NIoxeLuVCvFaz+K9NxLKf7yO22L8R7QqBjK7yMfaMR9u8xrb3Tfrnb85XcijW9v1vIF8+hUSp/5SstceB5bblFQz4UJHy7Cyisji5q/OHPxpo+fUR0SEZE2b8xibEujFC+h5yOA642JyTh9sZvWrsriPZd2Gtu++x1ZLHt7/mOY+peIH/8kxYuvpvjHH8XZQkIukg7gUH6/uS7L7ttlbXc2E5MRN29rxei6LP3ubY1aHLt94mSKrz7aTnv2uSQu5Ib39v/1wMUTPlyEbmdkzdbotT37Uhx4ppV231vuLwwCuHx0KoQiwmKnr/zS5fqkQNnZenFhnQ8m/R1CHJ1K6dEn2iF0mJ1tmxpRlapdiuUzzEX6xAY/IfmYPt75wnD/rvJ2JlzUzGLtKpMNXMjaVZmFGVTERz5gbTcb3dPNbt52Ku3d1678yRinWimefq6dPnl3K934yZbgYQ4+dIP5jdlR+XCRfPklb3v2pVh5ZTttWN8o5ZP9tz6UKdGHC/itD5Xy9gXO4sM32noxF92tg/ft6vQw+o3rGvHeX87ily4vfw+rYzMpXppI6fvPJ2HDPI2uy/qy+oV8CB8u0qJmFps3Zh5Y5GpsRzt+9ZqslJ3yr706E8DBBfz8PgEqYMli22rna2IyYmKy3e0HlbpNtS+/NIvL3hVv6mP0lsWR64lPJ06m+OnM62uUF15JMfOzzn8++2JyelMPqAJnLoQPPXDT9Y3Ys69V9DDoc//1rlZ6/MFm6ZpQLlnc2Xqh+gHOzpYLqJ5PbGjE/kPWdher21T7PN8oLB4qbGQ4YvUK4TqzJ6rqgdUrsmxosOhR0O8mJiO+uT+VcpJWUg7n5v6A6rG2gwv74u3NoodAxQgfemTrx/yU5O+pvy1l9hDXrZZ6w7m4P6CaxrZY28G5qHpgPjxVe+TDN7r5yF9ZtzYsamaxbZPHCbzRtk2NKNtWKWB2bnivtR2ci6oH5sPbQo90mxNB3o5OlXPrhWOW4M3cF1BdSxYL1uFsVD0wX56oPfSpj/o5yd8Lr5Qye4jly7JsZLjoUUB5jAyH48eg4n77w+5heKOHvqDqgfnxttxDI8Nevsjfi6+WM3yIUIIHp3M/QPWpbIUzja7LBOvMm/Chxyw2yduxmaJHcG6rVwjgICJiaDBi5ZVhcQZ94Hdvs1yGri9/tmFuY948TXvMyxd1t+UWjxUY26LRJPSL5cuyTO8HiBjf3ogli81tzJ8naQ5UP1BnN13vbHTqbWiwcx8UPQ6gd/R+oO5Ghs1tXDzhQw5UP1Bni5qZs9GpNVUP0H+cfEHdjW9vmtu4aJ6iOdEFljpT/UBdqXqA/vXbHza3UU+bN2YxMmxu4+IJH3KyfFmWbd7oHqWeVD9QV6oeoH8tWWxuo36GBiPGtmgySW94gubo87e5UamvDesbth9RK/bDQv8zt1E3u++13YLeET7kaMniLMa3+4mpr/Htth9RH/bDQj2Y26iLbZsatlvQU96Mc3bT9ZpPUl8jw1k2us6cRf8bXWc/LNTFyLCttfS/keGIT33UvEZvCR9ytqiZaT5JrX35s7Yf0f/u3Oo6hzoZ29LQfJK+9if3NTPVfPSa8GEBLF+WZbZfUFe2H9Hvxrc3YumABRrUyaJmFrvv9XGJ/vT1L5nXyIc3ggWyYX0jW7vKTUw9uf7pVyPDneu76HEAC8/2C/rRtk2NeN+15jXyIXxYQA/coUSP+nrgDhMZ/ce2Oqi3sS1Ov6B/rF2V6fNAroQPC2jpQBZfvdNClXpaOmD7Bf1lfHsjli+zSIM6W9TM4k/uszGe6hsa7Hwo0ueBPHkTWGCrV2TZXVv97NTThvUNp1/QF9auymy3ACJCuE5/eOKhZqbPA3nzpCzApo1ewKivL3/W9iOqbWgw4mt3Cx6A121Y39D/gcraM97UYJIFIXwoyB/8ngZ81NOSxTqEU21fvbMZSxZ7fgNnGttibUf1jG9vxOoVthCyMIQPBVnUzDSgpLZGhm0/opru2mqRBpzdomYWX7vb2o7q2LapYQshC8rqv0BLB7J44qGmSYpasv2Iqhldl8WmjRZpwLktWdxZ2xU9DriQbZsacfut5jQWlvChYAII6sz2I6pi7aos/uD3LNKAC1s6kMWecdsLKS/BA0URPpTA0gF74Kkn24+oAsePAXO1ekWWCSAoI8EDRRI+lMTIsEmKelL9Q9k5fgyYj9UrsswRnJSJ4IGieSKWiJSculo6kMVX73TtUz6OHwMuxob1jezrX7LcpniCB8rA07BkVq/Isu/t9RWY+hG+UTZ7xptOtgAu2vuubZjfKJTggbIQPpSQMnTO5/JL+3fuEEBQFoIHoJfMbxRlfLvggfIQPpTU0oEsDuxuOgmAN7nsXUWPIF8WaBRN8ADkwfzGQtsz3owN6wUPlIfwocSWLM5i1z2NbPNGzwzqxQKNoggegDytXpFlT+xshupW8jQ0GPHdR8xnlI/woeQWNbO4c2szu2urfyo6rrmqHvOIAIKFJngAFsLIcJbZXkte1q7qbN9evsx8Rvl4o62ITRsbknJiaDCiTpOJBqwshKHBiO/tbWaCB2ChLB3I4qlHba+lt7ZtasSuexqOh66pKqyXhQ8VMjKcZfpA1NtN19fv377bgNV1Tx5GhiOeeKhpoQYsuEXNLB65t5lt22Q5zsX7+pc6jSUXNc1ndbVmZfn/7T3tKmbJ4s5ENb7dP10d3XZzPf/dlw50+p+Mriv/Q5XqWLsqi8cfFDwAxbr91s5RnFX4akn5jAx3qvfed63GkpRfPd9k+sCG9Y3su480Y2S46JGwUNauymq15eKNFjWz2DGm/wm9sW1TIx65t+kLEVAKq1d0+kCo8mMutm1qCNH5D0sHih7BhVnFV9jyZVn2+INexuri97f4d47o9D/xhYj5GhrsNJZ05jlQNksHOtWt1nVcyNBgxBM7m7ZZcIbrVpf/WvB0q7hFzSw2bexUQUjL+9ddWxsxMlzfqoc38oWI+eh2ANdYsp7e/Q7/7FRDd12nupWz2byx06zUupA3unqk/NeE8KFPLF+WZY/c28y+/qWGL8J9Zu2qLD42Wv6HyULzhYi5uGtrZ5uF0tT6Gl4e/vGpjG51qx5fdI0Md6od7txqyyBvNjTYWRuXnSdan3nftY3sqUe9kPWLocGIB+5QUnc+vhBxPiPDEd99pBmbNtpmUXdVWJTB6RY1s9iwvpF9b29Tw+Wau2trp7eDagfO5eMfrMa7XzVGyZx0t2L83ePNbPNGz6iqGhp0BOBs+ULE2XQXa3Vu1EqHFzeqbOlAp+HynnFBe92Mrsvi7x5vZps2+hDF+X3ohmpcH1bqfWzJ4izu3NrMvvtI08KrYkbXdfbzCR5mzxciutauyuJ7ey3WeN01V7kOqL7VK7LsiZ2LsvHtttj2u27V3o6xZrZksecX5ze6rjon4mUppaLHwAI5OpXSHz7ajv2H/JuX1dBgxNiWRmxYr0T8Yj3/ckqfv78V08eLHgkLZWgw4qt3NkNDyfNbseFU7SaB7z7SrMzCDGbjVCvFgWdSGt/dNs/1kZHhiC/ebh7rpScPttPYjnbRw8jVnvHqXDPChxo6cTLFn34rpZ17+/tGrJKR4YgttzTipuszX2p7yOKsHrqhnftnduoWPty1taHnB33LPNcfhA756ffwYXRdZ1tW0eOYLeFDjZ04meKpv0lp9+PtmJgsejT1MjQYsWZlFtdclcVvrstsr8iZxVn/umtrIz42KnSYizqFDyPDEY8/qDM8/e9UK8X3n+9UuFrTVcfouiw+saEhdMhRP4cPQ4MRB3ZXa2uO8IGI6JSoH3imHXv2uR56aWQ44orLsli/Jot3vyOLZW+PWDYUFsIFOXEyxbe+m9KubwohqmxosNPV+bc/nFVqwi2LOoUPtltQRxOTKT3+HWu6Mtu8MYvbbm54Pi2Afg4fqrTdokv4wBlOnEzx3Esp/dlfpTh8xLUxW2tXZfGeSyNWXvl6yGBCKa9uJYSqn2qxPak36hA+6P8BKlzLpjuH3fBewflC6tfwoYrBQ4TwgfMQRLzZ6LosLr80i8veFTEynMXQJWHLRMU9/3JKf/6kRqxlpiy1t/o9fBhdl8WXP9uwuIfTHJtJ8dj+lB77tsq/hbZ5Yxa3fKARI8PmsCL0Y/hQ1eAhQvjALHWDiO8/n/q+jK/bj6EbMlxzVRaXDISFbJ/zhahcRoYjPvKBRnz4Rl+Ieq2fw4fx7U4Lggs5OpXSwWdT/OV3zHd52bwxi5uub8TKK221LVo/hQ8jwxEPfaHa2wmFD8zL0amUXnglxcFnU2W/GJ/e9PEX39npzaAfAxGdL0R/fSglC7OF1Q0cNGHNV7+EDyPDEWuuzmLllZ3nuOc3zN2xmRQvTdTj41KeRoYjfuO6Rrx/bRaXX+pZVCb9ED4MDUZs/Vh/NNgWPtAT3cnr738Q8dqPyhVInK3pY5UTQxZW99re9z/LdV33i9F1WWz89SyuHhE4LJTZhA/dcPZ8rrkqi4G3nf9/55qrZvdvqroMyuH0j0vPvphs0TiHocGIm67P4rrV5q+yq2r40J2HP7GhvypohA/k5thMin8/GemFV1L88P92Qomf/mvk1j9idF3nply/Jou3vVUlA713qpViajoqX/VTpNF1nSDQl2qA8jtxMsU//XOkicnOvPeDH6ZaVgR2e36995ezGF6u31eVnDiZ4qczUZkF21sW9/f1JXygMN1wIiLi3/49YmJydtdit3ohov9vUMrv2EyK6Z++vjDLM2CrkrWrsrjkFzphoOasAP3l6FRK3bXbzM8iXnilM+9VOZTvVspqLA75ET4A5KBbJRHx+qIsIuLFV1McmylsWD2zdKBztGxXt7xeNQMAp39gioj4wQ9T/OzfihzRmUaGs3jrWzr/3bYvWDjCBwAAACBXjaIHAAAAAPQ34QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQK+EDAAAAkCvhAwAAAJAr4QMAAACQq/8fQQaQnWdYKDgAAAAASUVORK5CYII=';
+const LOGO_WHITE_B64 = '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';
+
+// ---------- Apresentação executiva (.pptx — abre e edita no Google Apresentações) ----------
+function generatePresentation(){
+  const selecionados = savedScenarios.filter(s=>s.selected);
+  if (selecionados.length===0){
+    alert('Selecione ao menos um cenário salvo (checkbox na coluna "Incluir") antes de gerar a apresentação.');
+    return;
+  }
+  if (typeof PptxGenJS === 'undefined'){
+    alert('A biblioteca de geração de PPTX não carregou. Verifique sua conexão e tente novamente.');
+    return;
+  }
+
+  const pptx = new PptxGenJS();
+  pptx.defineLayout({name:'WIDE', width:13.33, height:7.5});
+  pptx.layout = 'WIDE';
+
+  // Paleta extraída do brandbook Turbi (institucional): azul da marca, navy de
+  // fundo, e verde do sistema como segunda cor para diferenciar Chat/E-mail.
+  const NAVY='111D36', MUTED='525252', BLUE='294BFB', LINE='D8DEE7', OFFWHITE='FFFFEE';
+  const CHAT='4FC3E8', EMAIL='E8A23E', RATE='8FB84A';
+  const COMPARE_COLORS = [CHAT, EMAIL, RATE, '9332FF', 'FFAE51', '71ECF5', 'D4AAFF', '91E55A'];
+  const FONT='Arial'; // Libertad (fonte da marca) não é uma fonte de sistema; Arial garante que abra igual em qualquer PC/Google Apresentações
+
+  const headCell = t => ({text:t, options:{bold:true, fill:{color:NAVY}, color:'FFFFFF', fontFace:FONT}});
+  const rawCurrent = collectRawParams();
+  const pCurrent = paramsFromRaw(rawCurrent);
+  const indispCurrent = pCurrent.absenteismo + pCurrent.turnover + pCurrent.pausasEscala + pCurrent.nr17 + pCurrent.treinamento + pCurrent.outros;
+  const horasProdCurrent = pCurrent.jornadaHoras * pCurrent.diasSemana * pCurrent.semanasMes * (1-Math.min(indispCurrent/100,0.95));
+
+  // Masthead padrão: logo pequeno + rótulo de seção, com bastante respiro antes do conteúdo.
+  // Cada bloco de texto/tabela recebe x,y,w,h EXPLÍCITOS (a versão anterior deixava
+  // altura implícita em alguns títulos, o que fazia o conteúdo seguinte sobrepor o
+  // título quando o arquivo era reaberto no Google Apresentações).
+  function addMasthead(slide, titulo, subtitulo){
+    slide.addImage({data:'data:image/png;base64,'+LOGO_BLUE_B64, x:11.35, y:0.42, w:1.5, h:0.51});
+    slide.addText(titulo, {x:0.6, y:0.42, w:10.6, h:0.6, fontSize:24, bold:true, color:NAVY, fontFace:FONT, valign:'top'});
+    if (subtitulo){
+      slide.addText(subtitulo, {x:0.6, y:1.05, w:11.8, h:0.4, fontSize:13, color:MUTED, fontFace:FONT, valign:'top'});
+    }
+  }
+
+  // ---- Slide 1: capa ----
+  let slide = pptx.addSlide();
+  slide.background = {color:NAVY};
+  slide.addImage({data:'data:image/png;base64,'+LOGO_WHITE_B64, x:0.7, y:0.7, w:2.2, h:0.75});
+  slide.addText('Apresentação Executiva', {x:0.7, y:2.5, w:11.9, h:1.0, fontSize:34, bold:true, color:'FFFFFF', fontFace:FONT, valign:'top'});
+  slide.addText('Dimensionamento de Pessoas — Chat & E-mail', {x:0.7, y:3.35, w:11.9, h:0.5, fontSize:16, color:'B8C4E8', fontFace:FONT, valign:'top'});
+  slide.addText(new Date().toLocaleDateString('pt-BR') + '  ·  ' + selecionados.length + ' cenário(s) comparado(s)', {x:0.7, y:3.9, w:11.9, h:0.4, fontSize:11, color:RATE, fontFace:FONT, valign:'top'});
+
+  // ---- Slide 2: agenda ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Agenda');
+  const agendaItens = ['Visão Geral dos Cenários', 'Resumo das Ações — TMA', 'Resumo das Ações — Volume', 'Volume para Dimensionar', 'Premissas — Chat', 'Premissas — E-mail', 'Premissas — Jornada & Indisponibilidade', 'Premissas — Financeiro', 'Comparativo entre cenários', ...selecionados.map(s=>'Cenário: '+s.nome), 'Comparativo de HC entre cenários', 'Comparativo de Custo de Servir entre cenários'];
+  slide.addText(
+    agendaItens.map((t,i)=>({text:(i+1)+'.  '+t, options:{breakLine:true}})),
+    {x:0.9, y:1.75, w:10.5, h:5.0, fontSize:16, color:NAVY, fontFace:FONT, valign:'top', lineSpacing:30}
+  );
+
+  // ---- Slide 2b: Visão Geral dos Cenários ----
+  // Slide narrativo/qualitativo — o que motivou cada cenário, quais ações ele
+  // considera etc. Vem do campo "Descrição" preenchido no portal ao salvar o
+  // cenário; não é algo que dá pra inferir só dos números.
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Visão Geral dos Cenários', 'O que motivou e diferencia cada cenário comparado nesta apresentação');
+  {
+    const rowH = Math.min(1.15, (7.0-1.75)/selecionados.length);
+    let y = 1.75;
+    selecionados.forEach((s,idx)=>{
+      const color = COMPARE_COLORS[idx % COMPARE_COLORS.length];
+      slide.addShape('rect', {x:0.6, y:y+0.05, w:0.1, h:rowH-0.2, fill:{color}, line:{type:'none'}});
+      slide.addText(s.nome, {x:0.9, y:y, w:11.6, h:0.35, fontSize:15, bold:true, color:NAVY, fontFace:FONT, valign:'top'});
+      const descTxt = (s.descricao && s.descricao.trim())
+        ? s.descricao.trim()
+        : '(sem descrição registrada para este cenário — edite no portal, campo "Descrição do cenário", e gere a apresentação de novo)';
+      const descColor = (s.descricao && s.descricao.trim()) ? MUTED : 'B34700';
+      const descItalic = !(s.descricao && s.descricao.trim());
+      slide.addText(descTxt, {x:0.9, y:y+0.35, w:11.6, h:rowH-0.4, fontSize:11, italic:descItalic, color:descColor, fontFace:FONT, valign:'top'});
+      y += rowH;
+    });
+  }
+
+  // ---- Slides 2c-2e: Resumo das Ações (TMA, Volume, Volume para Dimensionar) ----
+  // Conteúdo fixo, transcrito da planilha de racional de ações que você
+  // trouxe — não vem do simulador (por pedido seu, o simulador continua no
+  // padrão antigo). Se os números das ações mudarem, é preciso pedir pra
+  // atualizar aqui, já que não tem campo editável ligado a isso no portal.
+  function addActionsTable(slide, y, header, rows, colW, boldRowIdx, shadeRowIdx){
+    const headerCells = header.map(h=>({text:h, options:{bold:true, fill:{color:NAVY}, color:'FFFFFF', fontFace:FONT, fontSize:8.5}}));
+    const tableRows = [headerCells];
+    rows.forEach((r,ri)=>{
+      const isBold = boldRowIdx && boldRowIdx.includes(ri);
+      const isShade = shadeRowIdx && shadeRowIdx.includes(ri);
+      tableRows.push(r.map((cell,ci)=>({
+        text: String(cell),
+        options: {
+          fontSize: ci===header.length-1 ? 7.5 : 8,
+          bold: isBold,
+          color: isBold ? BLUE : NAVY,
+          fill: isShade ? {color:'F0F2F7'} : undefined,
+          fontFace: FONT
+        }
+      })));
+    });
+    slide.addTable(tableRows, {
+      x:0.5, y:y, w:12.3, colW, fontFace:FONT, color:NAVY,
+      border:{type:'solid', color:LINE, pt:0.5}, autoPage:false, valign:'middle'
+    });
+  }
+
+  // Slide: Resumo das Ações — TMA
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Resumo das Ações — TMA', 'Racional por ação, mês a mês, e a Meta de TMA resultante');
+  addActionsTable(slide, 1.6,
+    ['Ação','Ganho total','ago/2026','set/2026','out/2026','nov/2026','dez/2026','Observações'],
+    [
+      ['Ilhas','perda ganho','10,4','10,6','10,6','10,6','10,6','Em agosto estamos atingindo 10,4, com o projeto de Ilhas o TMA em viagem fica em 10,6 (racional ao lado)'],
+      ['Co-pilot','-0,9','','','-0,2','-0,4','-0,9','Racional na célula "U1" (DADO: considerei um ganho gradual em outubro e novembro)'],
+      ['','Meta','10,4','10,6','10,4','10,2','9,7','TMA de chat considerando todas as ações'],
+    ],
+    [1.9,0.95,0.62,0.62,0.62,0.62,0.62,6.36],
+    [2], [2]
+  );
+
+  // Slide: Resumo das Ações — Volume
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Resumo das Ações — Volume', 'Racional por ação, mês a mês, até o Volume com ações resultante');
+  addActionsTable(slide, 1.5,
+    ['Ação','Ganho total','ago/2026','set/2026','out/2026','nov/2026','dez/2026','Observações'],
+    [
+      ['Assistência e troca de carro','-355','','','-107','-118','-131','Racional na célula "O6"'],
+      ['Concierge','Validar q4','','','','','','Racional na célula "O9"'],
+      ['Ilhas','-10.611','','','-1.544','-3.403','-5.665','Racional na célula "O1"'],
+      ['Problemas para abrir/trancar o carro','-2.084','-395','-382','-393','-433','-481','Racional na célula "O1"'],
+      ['Retenção Chatbot','-27.784','','-2.418','-4.974','-8.223','-12.168','Cálculo considerando o ganho gradual do bot de 36% (atual) para 50% em dezembro'],
+      ['Média de volume atual','','25.700','24.871','25.582','28.195','31.289','Racional na célula "L1"'],
+      ['Volume com ações','','25.305','22.071','18.564','16.018','12.845','Volume em chat considerando todas as ações'],
+      ['Evolução Bot (50% Dezembro)','50%','','4%','7%','11%','14%','Pontos percentuais de aumento de retenção (baseline 36%)'],
+      ['Evolução Ilhas','18%','','','6%','12%','18%','Acréscimo no Assínc'],
+      ['Frota','','7000','7000','7200','8200','9100','Projeção de frota 28/08'],
+      ['CR','','3,62','3,15','2,58','1,95','1,41','Contact rate por frota (apenas conferência)'],
+    ],
+    [2.3,0.85,0.6,0.6,0.6,0.6,0.6,6.15],
+    [6], [5]
+  );
+
+  // Slide: Volume para Dimensionar
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Volume para Dimensionar', 'Split entre volume Em Viagem (Chat) e Sem Viagem (Assíncrono) usado no dimensionamento');
+  addActionsTable(slide, 1.7,
+    ['Métrica','ago/2026','set/2026','out/2026','nov/2026','dez/2026','Observações'],
+    [
+      ['Volume Chat (Em viagem)','25.305','22.071','18.564','16.018','12.845','Volume no atendimento de Chat'],
+      ['Volume Assínc (Sem viagem)','5.911','5.911','7.455','9.314','11.576','Volume no atendimento de assíncrono'],
+      ['% sem viagem','23,36%','26,78%','40,16%','58,15%','90,12%','Representatividade do volume SEM VIAGEM em relação ao EM VIAGEM'],
+      ['CR em Viagem','3,62','3,15','2,58','1,95','1,41','Contact rate por frota (apenas conferência)'],
+      ['CR Total','4,5','4,0','3,6','3,1','2,7',''],
+    ],
+    [2.5,0.72,0.72,0.72,0.72,0.72,6.18],
+    [0], []
+  );
+
+  // ---- Slide 3: Premissas Chat ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Premissas — Chat', 'Dimensionamento por Erlang C (tempo real)');
+  slide.addTable([
+    [headCell('Parâmetro'), headCell('Valor')],
+    ['Concorrência (chats simultâneos/agente)', String(pCurrent.concorrencia)],
+    ['Nível de Serviço meta', (pCurrent.nsMeta*100).toFixed(0)+'%'],
+    ['Tempo meta de atendimento', pCurrent.tempoMeta+' seg'],
+    ['Horas de operação', pCurrent.horasOperacaoChat+' h/dia'],
+    ['Dias operados', pCurrent.diasOperadosChat+' dias/mês'],
+    ['Ocupação máxima aceitável', (pCurrent.ocupMax*100).toFixed(0)+'%'],
+  ], {x:0.6, y:1.85, w:10.5, h:4.0, fontSize:13, color:NAVY, fontFace:FONT, border:{type:'solid',color:LINE,pt:0.75}, autoPage:false, valign:'middle'});
+  slide.addText('TMA (tempo médio de atendimento) agora varia mês a mês, dentro de cada cenário — ver o valor de cada mês no slide "Volume & Contact Rate" de cada cenário.', {x:0.6, y:6.15, w:11.8, h:0.6, fontSize:11, italic:true, color:MUTED, fontFace:FONT, valign:'top'});
+
+  // ---- Slide 4: Premissas E-mail ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Premissas — E-mail', 'Canal assíncrono — dimensionado por throughput');
+  slide.addTable([
+    [headCell('Parâmetro'), headCell('Valor')],
+    ['TMO (tempo médio de operação)', pCurrent.tmoEmail+' min/e-mail'],
+    ['SLA', pCurrent.slaEmail+' horas úteis'],
+    ['Horas úteis consideradas/dia', pCurrent.horasUteisDia+' h'],
+    ['SLA em dias úteis', (pCurrent.slaEmail/Math.max(pCurrent.horasUteisDia,1)).toFixed(1)+' dias'],
+  ], {x:0.6, y:1.85, w:10.5, h:2.6, fontSize:13, color:NAVY, fontFace:FONT, border:{type:'solid',color:LINE,pt:0.75}, autoPage:false, valign:'middle'});
+
+  // ---- Slide 5: Premissas Jornada & Indisponibilidade ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Premissas — Jornada & Indisponibilidade', 'Convertem posições/volume necessário em headcount');
+  slide.addTable([
+    [headCell('Jornada'), headCell('Valor')],
+    ['Jornada', pCurrent.jornadaHoras+' h/dia'],
+    ['Dias por semana', String(pCurrent.diasSemana)],
+    ['Semanas por mês', String(pCurrent.semanasMes)],
+  ], {x:0.6, y:1.85, w:5.6, h:2.2, fontSize:12.5, color:NAVY, fontFace:FONT, border:{type:'solid',color:LINE,pt:0.75}, autoPage:false, valign:'middle'});
+  slide.addTable([
+    [headCell('Indisponibilidade'), headCell('%')],
+    ['Absenteísmo', pCurrent.absenteismo+'%'],
+    ['Turnover', pCurrent.turnover+'%'],
+    ['Pausas / escala', pCurrent.pausasEscala+'%'],
+    ['NR17', pCurrent.nr17+'%'],
+    ['Treinamento/Outros', pCurrent.treinamento+'%'],
+    ['Perda de escala', pCurrent.outros+'%'],
+    [{text:'Total', options:{bold:true}}, {text:indispCurrent.toFixed(1)+'%', options:{bold:true}}],
+  ], {x:6.4, y:1.85, w:5.6, h:3.6, fontSize:12.5, color:NAVY, fontFace:FONT, border:{type:'solid',color:LINE,pt:0.75}, autoPage:false, valign:'middle'});
+  slide.addText('Horas produtivas por FTE / mês: '+horasProdCurrent.toFixed(1)+' h', {x:0.6, y:6.6, w:8, h:0.5, fontSize:13, bold:true, color:BLUE, fontFace:FONT, valign:'top'});
+
+  // ---- Slide 5b: Premissas Financeiro ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Premissas — Financeiro', 'Custo de HC N1, staff e ferramentas — aplicados por mês em cada cenário');
+  slide.addTable([
+    [headCell('Parâmetro'), headCell('Valor')],
+    ['Custo médio HC N1', 'R$ '+pCurrent.custoHcN1.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' / HC / mês'],
+    ['Custo Staff', 'R$ '+pCurrent.custoStaff.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' / mês'],
+    ['Custo Ferramentas', 'R$ '+pCurrent.custoFerramentas.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' / mês'],
+  ], {x:0.6, y:1.85, w:10.5, h:2.2, fontSize:13, color:NAVY, fontFace:FONT, border:{type:'solid',color:LINE,pt:0.75}, autoPage:false, valign:'middle'});
+  slide.addText('Custo Total do mês = (HC Total × Custo médio HC N1, já com % de reajuste) + (Custo Staff, já com % de reajuste) + Custo Ferramentas.  Custo/Veículo = Custo Total ÷ Frota do mês.', {x:0.6, y:4.3, w:11.8, h:0.8, fontSize:11, italic:true, color:MUTED, fontFace:FONT, valign:'top'});
+
+  // ---- Slide 6: comparativo entre cenários ----
+  slide = pptx.addSlide();
+  slide.background = {color:'FFFFFF'};
+  addMasthead(slide, 'Comparativo de Cenários');
+  const tableRows = [[headCell('Cenário'), headCell('Volume total (12m)'), headCell('HC pico'), headCell('HC médio'), headCell('Indisp. total'), headCell('Custo Total (12m)')]];
+  const summaries = [];
+  selecionados.forEach(s=>{
+    const p = paramsFromRaw(s.params);
+    const {rows, indispTotal} = computeScenario(p, s.scenario, s.modo, s.mesInicio);
+    const volTotal = rows.reduce((a,r)=>a+r.volumeChat+r.volumeEmail,0);
+    const hcs = rows.map(r=>r.hcTotal);
+    const pico = Math.max(...hcs);
+    const media = hcs.reduce((a,b)=>a+b,0)/hcs.length;
+    const diffPremissas = paramsDifferFromCurrent(s.params);
+    const finRows = computeFinanceRows(rows, p.custoHcN1, p.custoStaff, p.custoFerramentas);
+    const custoTotalAno = finRows.reduce((a,f)=>a+f.custoTotal,0);
+    summaries.push({nome:s.nome, rows, volTotal, pico, media, indispTotal, diffPremissas, finRows, custoTotalAno});
+    tableRows.push([
+      s.nome + (diffPremissas ? ' *' : ''),
+      Math.round(volTotal).toLocaleString('pt-BR'),
+      String(pico),
+      media.toFixed(1),
+      indispTotal.toFixed(1)+'%',
+      'R$ '+Math.round(custoTotalAno).toLocaleString('pt-BR')
+    ]);
+  });
+  const compTableH = Math.min(0.5*tableRows.length, 4.6);
+  slide.addTable(tableRows, {
+    x:0.5, y:1.75, w:12.3, h:compTableH, fontSize:12, color:NAVY, fontFace:FONT,
+    border:{type:'solid', color:LINE, pt:0.75}, autoPage:false, valign:'middle'
+  });
+  if (summaries.some(s=>s.diffPremissas)){
+    slide.addText('* este cenário usa premissas próprias, diferentes das exibidas nos slides de Premissas.', {x:0.5, y:1.75+compTableH+0.2, w:12.3, h:0.4, fontSize:10.5, italic:true, color:MUTED, fontFace:FONT, valign:'top'});
+  }
+
+  // ---- Dois slides por cenário selecionado: primeiro Volume & Contact Rate, depois HC ----
+  summaries.forEach(s=>{
+    // Slide 1 do cenário: Volume mensal (barra) + Contact Rate (linha).
+    // Testado à parte: um único gráfico combinado com eixo secundário NÃO
+    // renderiza a série de linha no LibreOffice/conversores de Slides — por
+    // isso aqui são dois gráficos nativos separados, cada um com sua própria
+    // legenda (linha em cima, barra embaixo), o que também é exatamente a
+    // convenção pedida.
+    const sl2 = pptx.addSlide();
+    sl2.background = {color:'FFFFFF'};
+    addMasthead(sl2, s.nome + ' — Volume & Contact Rate');
+    const tmaValues = s.rows.map(r=>r.tmaChat);
+    const tmaMin = Math.min(...tmaValues), tmaMax = Math.max(...tmaValues);
+    const tmaTxt = tmaMin===tmaMax ? `TMA constante: ${tmaMin}s` : `TMA varia de ${tmaValues[0]}s (${s.rows[0].label}) a ${tmaValues[tmaValues.length-1]}s (${s.rows[s.rows.length-1].label}) — mín ${tmaMin}s / máx ${tmaMax}s`;
+    sl2.addText(tmaTxt, {x:0.5, y:1.0, w:12.3, h:0.35, fontSize:11, color:MUTED, fontFace:FONT, valign:'top'});
+    const volLabels = s.rows.map(r=>r.label);
+    const lineData = [{name:'Contact Rate', labels:volLabels, values:s.rows.map(r=>r.contactRate)}];
+    const barVolData = [
+      {name:'Volume Chat', labels:volLabels, values:s.rows.map(r=>r.volumeChat)},
+      {name:'Volume E-mail', labels:volLabels, values:s.rows.map(r=>r.volumeEmail)},
+    ];
+    sl2.addChart(pptx.ChartType.line, lineData, {
+      x:0.5, y:1.55, w:12.3, h:2.55,
+      showLegend:true, legendPos:'t',
+      chartColors:[RATE], lineDataSymbol:'circle',
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      showValue:true, dataLabelColor:MUTED, dataLabelFontSize:9, dataLabelPosition:'t', dataLabelFormatCode:'0.00'
+    });
+    sl2.addChart(pptx.ChartType.bar, barVolData, {
+      x:0.5, y:4.35, w:12.3, h:2.55,
+      barGrouping:'stacked', showLegend:true, legendPos:'b',
+      chartColors:[CHAT, EMAIL],
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      valAxisMinVal:0,
+      showValue:true, dataLabelColor:'FFFFFF', dataLabelFontSize:8, dataLabelPosition:'ctr', dataLabelFormatCode:'#,##0'
+    });
+
+    // Slide 2 do cenário: HC Chat vs HC E-mail
+    const sl = pptx.addSlide();
+    sl.background = {color:'FFFFFF'};
+    addMasthead(sl, s.nome);
+    let kpiY = 1.75;
+    sl.addText(
+      `Volume total: ${Math.round(s.volTotal).toLocaleString('pt-BR')}   ·   HC pico: ${s.pico}   ·   HC médio: ${s.media.toFixed(1)}   ·   Indisp.: ${s.indispTotal.toFixed(1)}%`,
+      {x:0.5, y:kpiY, w:12.3, h:0.4, fontSize:12, color:MUTED, fontFace:FONT, valign:'top'}
+    );
+    let chartY = kpiY + 0.55;
+    if (s.diffPremissas){
+      sl.addText('⚠ Este cenário usa premissas próprias (diferentes das premissas gerais mostradas no início).', {x:0.5, y:chartY, w:12.3, h:0.35, fontSize:10.5, italic:true, color:'B34700', fontFace:FONT, valign:'top'});
+      chartY += 0.45;
+    }
+    const chartData = [
+      {name:'HC Chat', labels:s.rows.map(r=>r.label), values:s.rows.map(r=>r.hcChat)},
+      {name:'HC E-mail', labels:s.rows.map(r=>r.label), values:s.rows.map(r=>r.hcEmail)},
+    ];
+    sl.addChart(pptx.ChartType.bar, chartData, {
+      x:0.5, y:chartY, w:12.3, h:7.0-chartY-0.3,
+      barGrouping:'stacked', showLegend:true, legendPos:'b',
+      chartColors:[CHAT, EMAIL], showTitle:false,
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      showValAxisTitle:false, valAxisMinVal:0,
+      showValue:true, dataLabelColor:'FFFFFF', dataLabelFontSize:9, dataLabelPosition:'ctr', dataLabelFormatCode:'0'
+    });
+
+    // Slide 3 do cenário: Visão Financeira (Custo de Servir por veículo em linha,
+    // custo HC N1 + Staff + Ferramentas por mês em barra empilhada embaixo)
+    const slf = pptx.addSlide();
+    slf.background = {color:'FFFFFF'};
+    addMasthead(slf, s.nome + ' — Visão Financeira');
+    const custoMedioVeiculo = (() => {
+      const validos = s.finRows.filter(f=>f.custoPorVeiculo!==null);
+      if (!validos.length) return null;
+      return validos.reduce((a,f)=>a+f.custoPorVeiculo,0)/validos.length;
+    })();
+    const finKpiTxt = `Custo Total (12m): R$ ${Math.round(s.custoTotalAno).toLocaleString('pt-BR')}   ·   Custo médio/mês: R$ ${Math.round(s.custoTotalAno/12).toLocaleString('pt-BR')}` +
+      (custoMedioVeiculo!==null ? `   ·   Custo de Servir médio: R$ ${custoMedioVeiculo.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}/veículo` : '');
+    slf.addText(finKpiTxt, {x:0.5, y:1.0, w:12.3, h:0.4, fontSize:12, color:MUTED, fontFace:FONT, valign:'top'});
+
+    const servirData = [{name:'Custo de Servir (R$/veículo)', labels:s.finRows.map(f=>f.label), values:s.finRows.map(f=>f.custoPorVeiculo!==null?f.custoPorVeiculo:0)}];
+    slf.addChart(pptx.ChartType.line, servirData, {
+      x:0.5, y:1.55, w:12.3, h:2.55,
+      showLegend:true, legendPos:'t',
+      chartColors:[RATE], lineDataSymbol:'circle',
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      valAxisMinVal:0, valAxisLabelFormatCode:'#,##0',
+      showValue:true, dataLabelColor:MUTED, dataLabelFontSize:8, dataLabelPosition:'t', dataLabelFormatCode:'#,##0'
+    });
+
+    const finChartData = [
+      {name:'Custo HC N1 (c/ reajuste)', labels:s.finRows.map(f=>f.label), values:s.finRows.map(f=>f.novoCustoHc)},
+      {name:'Custo Staff (c/ reajuste)', labels:s.finRows.map(f=>f.label), values:s.finRows.map(f=>f.novoCustoStaff)},
+      {name:'Custo Ferramentas', labels:s.finRows.map(f=>f.label), values:s.finRows.map(f=>f.custoFerramentas)},
+    ];
+    slf.addChart(pptx.ChartType.bar, finChartData, {
+      x:0.5, y:4.35, w:12.3, h:2.55,
+      barGrouping:'stacked', showLegend:true, legendPos:'b',
+      chartColors:[CHAT, EMAIL, RATE], showTitle:false,
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      valAxisMinVal:0, valAxisLabelFormatCode:'#,##0',
+      showValue:true, dataLabelColor:'FFFFFF', dataLabelFontSize:7, dataLabelPosition:'ctr', dataLabelFormatCode:'#,##0'
+    });
+  });
+
+  // ---- Slides comparativos: HC e Custo de Servir de todos os cenários lado a lado ----
+  // Usa rótulos de mês reais quando todos os cenários selecionados começam no
+  // mesmo mês; senão usa "Mês 1..12" (posição relativa) para não misturar
+  // datas de janelas diferentes no mesmo eixo.
+  function sameMonthLabels(list){
+    if (!list.length) return null;
+    const ref = list[0].rows.map(r=>r.label);
+    const allSame = list.every(s=> s.rows.map(r=>r.label).every((l,i)=>l===ref[i]));
+    return allSame ? ref : null;
+  }
+  if (summaries.length >= 2){
+    const monthLabels = sameMonthLabels(summaries) || Array.from({length:12}, (_,i)=>'Mês '+(i+1));
+
+    // Tabela de apoio abaixo do gráfico — com 3+ cenários x 12 meses os rótulos
+    // de dados no próprio gráfico colidem e ficam ilegíveis, então os números
+    // exatos vão numa tabela compacta logo abaixo em vez de no gráfico.
+    function addCompareDataTable(slide, y, valueGetter, fmt){
+      const monthColW = (12.3 - 2.3) / 12;
+      const header = [{text:'Cenário', options:{bold:true, fill:{color:NAVY}, color:'FFFFFF', fontFace:FONT}}]
+        .concat(monthLabels.map(l=>({text:l, options:{bold:true, fill:{color:NAVY}, color:'FFFFFF', fontFace:FONT, fontSize:7}})));
+      const tableRows = [header];
+      summaries.forEach((s,idx)=>{
+        const vals = valueGetter(s);
+        tableRows.push([
+          {text:s.nome, options:{color:COMPARE_COLORS[idx], bold:true, fontSize:7.5}},
+          ...vals.map(v=>({text:fmt(v), options:{fontSize:7.5}}))
+        ]);
+      });
+      slide.addTable(tableRows, {
+        x:0.5, y:y, w:12.3, colW:[2.3, ...Array(12).fill(monthColW)],
+        fontSize:7.5, color:NAVY, fontFace:FONT,
+        border:{type:'solid', color:LINE, pt:0.5}, autoPage:false, valign:'middle'
+      });
+    }
+
+    // Slide: Comparativo de HC entre cenários
+    const slHc = pptx.addSlide();
+    slHc.background = {color:'FFFFFF'};
+    addMasthead(slHc, 'Comparativo de HC entre Cenários', 'HC Total (Chat + E-mail) por mês, um cenário por linha');
+    const hcCompareData = summaries.map(s=>({ name:s.nome, labels:monthLabels, values:s.rows.map(r=>r.hcTotal) }));
+    slHc.addChart(pptx.ChartType.line, hcCompareData, {
+      x:0.5, y:1.5, w:12.3, h:3.3,
+      showLegend:true, legendPos:'t',
+      chartColors: COMPARE_COLORS.slice(0, summaries.length),
+      lineDataSymbol:'circle',
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      valAxisMinVal:0
+    });
+    addCompareDataTable(slHc, 5.0, s=>s.rows.map(r=>r.hcTotal), v=>String(v));
+
+    // Slide: Comparativo de Custo de Servir entre cenários
+    const slCusto = pptx.addSlide();
+    slCusto.background = {color:'FFFFFF'};
+    addMasthead(slCusto, 'Comparativo de Custo de Servir entre Cenários', 'Custo Total ÷ Frota do mês (R$/veículo), um cenário por linha');
+    const custoCompareData = summaries.map(s=>({ name:s.nome, labels:monthLabels, values:s.finRows.map(f=>f.custoPorVeiculo!==null?f.custoPorVeiculo:0) }));
+    slCusto.addChart(pptx.ChartType.line, custoCompareData, {
+      x:0.5, y:1.5, w:12.3, h:3.3,
+      showLegend:true, legendPos:'t',
+      chartColors: COMPARE_COLORS.slice(0, summaries.length),
+      lineDataSymbol:'circle',
+      catAxisLabelColor:MUTED, valAxisLabelColor:MUTED,
+      valAxisMinVal:0, valAxisLabelFormatCode:'#,##0'
+    });
+    addCompareDataTable(slCusto, 5.0, s=>s.finRows.map(f=>f.custoPorVeiculo!==null?f.custoPorVeiculo:0), v=>Math.round(v).toLocaleString('pt-BR'));
+  }
+
+  // ---- Slide final: próximos passos (placeholder editável) ----
+  slide = pptx.addSlide();
+  slide.background = {color:NAVY};
+  slide.addImage({data:'data:image/png;base64,'+LOGO_WHITE_B64, x:0.7, y:0.5, w:1.65, h:0.56});
+  slide.addText('Próximos passos', {x:0.7, y:1.4, w:10.5, h:0.7, fontSize:26, bold:true, color:'FFFFFF', fontFace:FONT, valign:'top'});
+  slide.addText(
+    ['Validar premissas com a operação (edite este texto)', 'Decidir cenário de referência para o orçamento', 'Alinhar contratações/turnover com RH', 'Revisar mensalmente conforme volume real'].map(t=>({text:t, options:{breakLine:true}})),
+    {x:1.0, y:2.35, w:10.5, h:3.5, fontSize:16, color:'E8EDFB', fontFace:FONT, valign:'top', lineSpacing:28}
+  );
+
+  pptx.writeFile({fileName:'apresentacao-executiva-cenarios.pptx'});
+}
+
+// ---------- wiring ----------
+// Parâmetros globais (Chat/E-mail/Jornada/Calibração) só afetam o resultado —
+// nunca a estrutura da tabela de cenário mensal, então não precisam reconstruí-la.
+document.querySelectorAll('.card input').forEach(inp=>{
+  inp.addEventListener('input', ()=>{
+    const startStr = document.getElementById('mesInicio').value || '2026-08';
+    computeAndRenderResults(startStr);
+  });
+});
+// Mês inicial muda os rótulos das linhas -> precisa reconstruir a tabela.
+document.getElementById('mesInicio').addEventListener('input', calc);
+
+document.getElementById('btnAuto').addEventListener('click', ()=>{
+  modo='auto';
+  document.getElementById('btnAuto').classList.add('active');
+  document.getElementById('btnManual').classList.remove('active');
+  document.getElementById('modoDesc').innerHTML = 'Modo <b>Automático</b>: Volume Chat = Frota × Contact Rate.';
+  calc();
+});
+document.getElementById('btnManual').addEventListener('click', ()=>{
+  modo='manual';
+  document.getElementById('btnManual').classList.add('active');
+  document.getElementById('btnAuto').classList.remove('active');
+  document.getElementById('modoDesc').innerHTML = 'Modo <b>Manual</b>: Volume Chat digitado diretamente.';
+  calc();
+});
+
+document.getElementById('nomeCenario').addEventListener('input', scheduleAutosave);
+document.getElementById('descricaoCenario').addEventListener('input', scheduleAutosave);
+
+document.getElementById('btnAplicarTma').addEventListener('click', ()=>{
+  const base = parseFloat(document.getElementById('tmaChat').value) || 300;
+  scenario.forEach(m=>{ m.tmaChat = base; });
+  calc();
+});
+
+document.getElementById('btnSalvarCenario').addEventListener('click', saveScenario);
+document.getElementById('btnNovoCenario').addEventListener('click', ()=>{
+  if (confirm('Começar um novo cenário do zero? As alterações não salvas serão perdidas (cenários já salvos continuam guardados).')) novoCenario();
+});
+document.getElementById('btnGerarApresentacao').addEventListener('click', generatePresentation);
+document.getElementById('btnExportarCenarios').addEventListener('click', exportScenarios);
+document.getElementById('btnImportarCenarios').addEventListener('click', ()=>{
+  document.getElementById('inputImportarCenarios').click();
+});
+document.getElementById('inputImportarCenarios').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if (file) importScenariosFromFile(file);
+  e.target.value = '';
+});
+
+function updateStorageBackendNote(){
+  const el = document.getElementById('storageBackendNote');
+  if (!el) return;
+  if (SHEETS_API_URL){
+    el.innerHTML = 'os cenários e o estado atual são gravados no <b>Google Sheets</b> configurado — qualquer pessoa da empresa que abrir esta mesma página (aqui ou fora do Claude) vê os mesmos cenários. Se o Sheets ficar fora do ar, esta página continua funcionando salvando localmente neste navegador até a conexão voltar.';
+  } else if (typeof window.storage !== 'undefined'){
+    el.innerHTML = 'este portal grava no armazenamento compartilhado do <b>Claude</b> (visível a qualquer pessoa com acesso a este mesmo artefato dentro do Claude) e também no navegador local. <b>Sem o Google Sheets configurado, quem abrir fora do Claude não vê os mesmos cenários</b> — peça para eu configurar o Sheets se precisar compartilhar com quem não usa Claude.';
+  } else {
+    el.innerHTML = 'nenhum backend compartilhado está configurado — os cenários ficam salvos só <b>neste navegador/computador</b>. Configure o Google Sheets (veja o arquivo apps-script-backend.gs.txt) para compartilhar com a empresa.';
+  }
+}
+
+(async function init(){
+  updateStorageBackendNote();
+  await restoreWorkingState();
+  calc();
+  loadSavedScenarios();
+})();
+</script>
+</body>
+</html>
